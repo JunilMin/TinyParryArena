@@ -9,6 +9,7 @@ public static class TinyParryArenaBuilder
     private enum MonsterKind { Bear, Golem, Dragon }
     private const string ScenePath = "Assets/_Project/Scenes/Arena.unity";
     private const string KayRoot = "Assets/ThirdParty/KayKit";
+    private const string KenneyArenaRoot = "Assets/ThirdParty/KenneyMiniArena/Models/FBX format";
     private const string MaterialRoot = "Assets/_Project/Art/Materials";
     private const string FreeGolemPath = "Assets/ThirdParty/Golem_Free/FBX/Characters/Rock_Golem.fbx";
     private const float CourtyardFloorSize = 96f;
@@ -513,6 +514,7 @@ public static class TinyParryArenaBuilder
         CreateTorch(root.transform, new Vector3(36f, 1.4f, 42.5f));
         CreateTorch(root.transform, new Vector3(-36f, 1.4f, -42.5f));
         CreateTorch(root.transform, new Vector3(36f, 1.4f, -42.5f));
+        CreateCourtyardArchitecture(root.transform);
         CreateDirectionalLight(root.transform, new Color(0.42f, 0.55f, 0.85f), 0.75f, new Vector3(55f, 30f, 0f));
         return root;
     }
@@ -544,8 +546,87 @@ public static class TinyParryArenaBuilder
             }
         }
 
+        CreateThroneHallArchitecture(root.transform);
         CreateDirectionalLight(root.transform, new Color(1f, 0.42f, 0.22f), 0.9f, new Vector3(45f, -20f, 0f));
         return root;
+    }
+
+    private static void CreateCourtyardArchitecture(Transform parent)
+    {
+        const float facadeOffset = 43.45f;
+        const float wallHeight = 5.6f;
+
+        for (int offset = -39; offset <= 39; offset += 6)
+        {
+            if (Mathf.Abs(offset) >= 6)
+                CreateEnvironmentModel("wall.fbx", parent, "North Modular Wall", new Vector3(offset, 0f, facadeOffset), Vector3.zero, wallHeight);
+
+            CreateEnvironmentModel("wall.fbx", parent, "South Modular Wall", new Vector3(offset, 0f, -facadeOffset), new Vector3(0f, 180f, 0f), wallHeight);
+            CreateEnvironmentModel("wall.fbx", parent, "East Modular Wall", new Vector3(facadeOffset, 0f, offset), new Vector3(0f, 90f, 0f), wallHeight);
+            CreateEnvironmentModel("wall.fbx", parent, "West Modular Wall", new Vector3(-facadeOffset, 0f, offset), new Vector3(0f, -90f, 0f), wallHeight);
+        }
+
+        CreateEnvironmentModel("wall-gate.fbx", parent, "Castle Gate Facade", new Vector3(0f, 0f, facadeOffset - 0.15f), Vector3.zero, 7.2f);
+
+        Vector3[] corners =
+        {
+            new Vector3(facadeOffset, 0f, facadeOffset),
+            new Vector3(-facadeOffset, 0f, facadeOffset),
+            new Vector3(facadeOffset, 0f, -facadeOffset),
+            new Vector3(-facadeOffset, 0f, -facadeOffset)
+        };
+        foreach (Vector3 corner in corners)
+            CreateEnvironmentModel("wall-corner.fbx", parent, "Castle Wall Corner", corner, Vector3.zero, wallHeight + 0.5f);
+
+        for (int side = -1; side <= 1; side += 2)
+        {
+            CreateEnvironmentModel("statue.fbx", parent, "Gate Guardian Statue", new Vector3(side * 8.5f, 0f, 38.5f), new Vector3(0f, 180f, 0f), 5.2f);
+            CreateEnvironmentModel("weapon-rack.fbx", parent, "Courtyard Weapon Rack", new Vector3(side * 9f, 0f, -39.5f), Vector3.zero, 2.4f);
+
+            for (int z = -24; z <= 24; z += 24)
+            {
+                CreateEnvironmentModel("column.fbx", parent, "Courtyard Column", new Vector3(side * 37f, 0f, z), Vector3.zero, 6.2f);
+                CreateTorch(parent, new Vector3(side * 35.8f, 3.7f, z));
+            }
+        }
+
+        for (int x = -30; x <= 30; x += 15)
+        {
+            if (x != 0)
+                CreateEnvironmentModel("banner.fbx", parent, "Castle Banner", new Vector3(x, 2.0f, facadeOffset - 0.65f), Vector3.zero, 3.2f);
+        }
+    }
+
+    private static void CreateThroneHallArchitecture(Transform parent)
+    {
+        const float sideWallOffset = 23.45f;
+        const float backWallOffset = 31.45f;
+        const float wallHeight = 8.8f;
+
+        for (int z = -27; z <= 27; z += 6)
+        {
+            CreateEnvironmentModel("wall.fbx", parent, "Hall Left Modular Wall", new Vector3(-sideWallOffset, 0f, z), new Vector3(0f, -90f, 0f), wallHeight);
+            CreateEnvironmentModel("wall.fbx", parent, "Hall Right Modular Wall", new Vector3(sideWallOffset, 0f, z), new Vector3(0f, 90f, 0f), wallHeight);
+        }
+
+        for (int x = -21; x <= 21; x += 6)
+            CreateEnvironmentModel("wall.fbx", parent, "Hall Back Modular Wall", new Vector3(x, 0f, backWallOffset), Vector3.zero, wallHeight);
+
+        CreateEnvironmentModel("wall-corner.fbx", parent, "Hall Back Left Corner", new Vector3(-sideWallOffset, 0f, backWallOffset), Vector3.zero, wallHeight);
+        CreateEnvironmentModel("wall-corner.fbx", parent, "Hall Back Right Corner", new Vector3(sideWallOffset, 0f, backWallOffset), new Vector3(0f, 90f, 0f), wallHeight);
+
+        for (int side = -1; side <= 1; side += 2)
+        {
+            CreateEnvironmentModel("statue.fbx", parent, "Royal Statue", new Vector3(side * 8f, 0f, 25.5f), new Vector3(0f, 180f, 0f), 5.8f);
+            CreateEnvironmentModel("banner.fbx", parent, "Royal Banner", new Vector3(side * 7f, 3.2f, 30.75f), Vector3.zero, 3.8f);
+
+            for (int z = -20; z <= 20; z += 10)
+            {
+                CreateEnvironmentModel(z == 0 ? "column-damaged.fbx" : "column.fbx", parent, "Royal Stone Column", new Vector3(side * 18f, 0f, z), Vector3.zero, 7.2f);
+            }
+        }
+
+        CreateEnvironmentModel("trophy.fbx", parent, "Royal Trophy", new Vector3(0f, 0.8f, 29.1f), new Vector3(0f, 180f, 0f), 2.1f);
     }
 
     private static GameObject NewStageRoot(Transform parent, string name)
@@ -592,6 +673,48 @@ public static class TinyParryArenaBuilder
         Renderer renderer = go.GetComponent<Renderer>();
         if (renderer != null) renderer.sharedMaterial = material;
         return go;
+    }
+
+    private static GameObject CreateEnvironmentModel(
+        string fileName,
+        Transform parent,
+        string name,
+        Vector3 basePosition,
+        Vector3 rotation,
+        float targetHeight)
+    {
+        string path = KenneyArenaRoot + "/" + fileName;
+        GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (prefab == null)
+            throw new FileNotFoundException("Kenney Mini Arena model missing", path);
+
+        GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+        instance.name = name;
+        instance.transform.SetParent(parent, false);
+        instance.transform.localPosition = basePosition;
+        instance.transform.localRotation = Quaternion.Euler(rotation);
+        instance.transform.localScale = Vector3.one;
+
+        Renderer[] renderers = instance.GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0)
+            return instance;
+
+        Bounds bounds = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++)
+            bounds.Encapsulate(renderers[i].bounds);
+
+        float scale = targetHeight / Mathf.Max(0.001f, bounds.size.y);
+        instance.transform.localScale = Vector3.one * scale;
+
+        bounds = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++)
+            bounds.Encapsulate(renderers[i].bounds);
+        instance.transform.position += Vector3.up * (basePosition.y - bounds.min.y);
+
+        foreach (Collider collider in instance.GetComponentsInChildren<Collider>())
+            Object.DestroyImmediate(collider);
+
+        return instance;
     }
 
     private static Material GetOrCreateMaterial(string name, Color color)
