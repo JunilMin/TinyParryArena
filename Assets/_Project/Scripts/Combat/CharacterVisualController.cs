@@ -68,6 +68,12 @@ public sealed class CharacterVisualController : MonoBehaviour
         rightLowerArm ??= FindBone("lowerarm.r");
         leftUpperLeg ??= FindBone("upperleg.l");
         rightUpperLeg ??= FindBone("upperleg.r");
+        leftUpperArm ??= FindBoneEndingWith("leftarm");
+        rightUpperArm ??= FindBoneEndingWith("rightarm");
+        leftLowerArm ??= FindBoneEndingWith("leftforearm");
+        rightLowerArm ??= FindBoneEndingWith("rightforearm");
+        leftUpperLeg ??= FindBoneEndingWith("leftupleg");
+        rightUpperLeg ??= FindBoneEndingWith("rightupleg");
 
         if (leftUpperArm != null) leftUpperArmBase = leftUpperArm.localRotation;
         if (rightUpperArm != null) rightUpperArmBase = rightUpperArm.localRotation;
@@ -83,6 +89,17 @@ public sealed class CharacterVisualController : MonoBehaviour
         foreach (Transform t in all)
         {
             if (string.Equals(t.name, wanted, StringComparison.OrdinalIgnoreCase)) return t;
+        }
+        return null;
+    }
+
+    private Transform FindBoneEndingWith(string suffix)
+    {
+        Transform[] all = visualRoot.GetComponentsInChildren<Transform>(true);
+        foreach (Transform t in all)
+        {
+            if (t.name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                return t;
         }
         return null;
     }

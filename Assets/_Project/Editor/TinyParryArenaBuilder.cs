@@ -13,7 +13,9 @@ public static class TinyParryArenaBuilder
     private const string KayRoot = "Assets/ThirdParty/KayKit";
     private const string KenneyArenaRoot = "Assets/ThirdParty/KenneyMiniArena/Models/FBX format";
     private const string MaterialRoot = "Assets/_Project/Art/Materials";
+    private const string CharacterMaterialRoot = MaterialRoot + "/Characters";
     private const string ProfileRoot = "Assets/_Project/Art/Profiles";
+    private const string MixamoKnightPath = "Assets/ThirdParty/Mixamo/Knight_D_Pelegrini_TPose.fbx";
     private const string FreeGolemPath = "Assets/ThirdParty/Golem_Free/FBX/Characters/Rock_Golem.fbx";
     private const float CourtyardFloorSize = 96f;
     private const float CourtyardWallOffset = 44f;
@@ -26,7 +28,9 @@ public static class TinyParryArenaBuilder
     {
         EnsureFolder("Assets/_Project/Scenes");
         EnsureFolder(MaterialRoot);
+        EnsureFolder(CharacterMaterialRoot);
         EnsureFolder(ProfileRoot);
+        ConfigureHumanoidModelImporter(MixamoKnightPath);
 
         Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -61,89 +65,89 @@ public static class TinyParryArenaBuilder
         stageRoots[0].name = "Stage 1 - Castle Gate";
         bosses[0] = CreateBoss(
             stageRoots[0].transform, player.transform, "Arena Champion",
-            KayRoot + "/Characters/fbx/Rogue.fbx",
+            MixamoKnightPath,
             KayRoot + "/Weapons/sword_1handed.fbx",
             KayRoot + "/Weapons/shield_badge.fbx",
-            120, 1.22f, 2.85f, 1, new Vector3(0f, 0.05f, 14.0f));
+            120, 1.84f, 2.85f, 1, new Vector3(0f, 0.05f, 14.0f));
 
         stageRoots[1] = CreateCastleCourtyard(stagesRoot.transform);
         bosses[1] = CreateBoss(
             stageRoots[1].transform, player.transform, "Castle Warden",
-            KayRoot + "/Characters/fbx/Knight.fbx",
+            MixamoKnightPath,
             KayRoot + "/Weapons/sword_1handed.fbx",
             KayRoot + "/Weapons/shield_badge.fbx",
-            175, 1.36f, 3.05f, 2, new Vector3(0f, 0.05f, 14.0f));
+            175, 1.90f, 3.05f, 2, new Vector3(0f, 0.05f, 14.0f));
 
         stageRoots[2] = CreateThroneHall(stagesRoot.transform);
         bosses[2] = CreateBoss(
             stageRoots[2].transform, player.transform, "The Fallen King",
-            KayRoot + "/Characters/fbx/Barbarian.fbx",
+            MixamoKnightPath,
             KayRoot + "/Weapons/sword_2handed.fbx",
             KayRoot + "/Weapons/shield_round_barbarian.fbx",
-            260, 1.52f, 3.25f, 3, new Vector3(0f, 0.05f, 16.0f));
+            260, 2.02f, 3.25f, 3, new Vector3(0f, 0.05f, 16.0f));
 
         stageRoots[3] = CreateCastleCourtyard(stagesRoot.transform);
         stageRoots[3].name = "Stage 4 - Twinblade Pit";
         bosses[3] = CreateBoss(
             stageRoots[3].transform, player.transform, "Twinblade Duelist",
-            KayRoot + "/Characters/fbx/Rogue_Hooded.fbx",
+            MixamoKnightPath,
             KayRoot + "/Weapons/sword_1handed.fbx",
             KayRoot + "/Weapons/sword_1handed.fbx",
-            230, 1.30f, 2.95f, 4, new Vector3(0f, 0.05f, 14.5f));
+            230, 1.86f, 2.95f, 4, new Vector3(0f, 0.05f, 14.5f));
 
         stageRoots[4] = CreateCastleCourtyard(stagesRoot.transform);
         stageRoots[4].name = "Stage 5 - Sentinel Courtyard";
         bosses[4] = CreateBoss(
             stageRoots[4].transform, player.transform, "Spear Sentinel",
-            KayRoot + "/Characters/fbx/Ranger.fbx",
-            KayRoot + "/Weapons/sword_2handed.fbx",
+            MixamoKnightPath,
+            "Assets/ThirdParty/KenneyMiniArena/Models/FBX format/weapon-spear.fbx",
             "",
-            270, 1.42f, 3.85f, 5, new Vector3(0f, 0.05f, 15.0f));
+            270, 1.94f, 3.85f, 5, new Vector3(0f, 0.05f, 15.0f));
 
         stageRoots[5] = CreateThroneHall(stagesRoot.transform);
         stageRoots[5].name = "Stage 6 - Execution Ground";
         bosses[5] = CreateBoss(
             stageRoots[5].transform, player.transform, "Greatsword Executioner",
-            KayRoot + "/Characters/fbx/Barbarian.fbx",
+            MixamoKnightPath,
             KayRoot + "/Weapons/sword_2handed.fbx",
             "",
-            325, 1.62f, 3.55f, 6, new Vector3(0f, 0.05f, 16.0f));
+            325, 2.08f, 3.55f, 6, new Vector3(0f, 0.05f, 16.0f));
 
         stageRoots[6] = CreateThroneHall(stagesRoot.transform);
         stageRoots[6].name = "Stage 7 - Royal Command Hall";
         bosses[6] = CreateBoss(
             stageRoots[6].transform, player.transform, "Royal Commander",
-            KayRoot + "/Characters/fbx/Knight.fbx",
+            MixamoKnightPath,
             KayRoot + "/Weapons/sword_1handed.fbx",
             KayRoot + "/Weapons/shield_badge.fbx",
-            390, 1.55f, 3.45f, 7, new Vector3(0f, 0.05f, 16.0f));
+            390, 2.00f, 3.45f, 7, new Vector3(0f, 0.05f, 16.0f));
 
         stageRoots[7] = CreateCastleCourtyard(stagesRoot.transform);
         stageRoots[7].name = "Stage 8 - Moonlit Garden";
         bosses[7] = CreateBoss(
             stageRoots[7].transform, player.transform, "Royal Assassin",
-            KayRoot + "/Characters/fbx/Rogue_Hooded.fbx",
+            MixamoKnightPath,
             KayRoot + "/Weapons/sword_1handed.fbx",
             KayRoot + "/Weapons/sword_1handed.fbx",
-            470, 1.48f, 3.25f, 8, new Vector3(0f, 0.05f, 15.0f));
+            470, 1.88f, 3.25f, 8, new Vector3(0f, 0.05f, 15.0f));
 
         stageRoots[8] = CreateThroneHall(stagesRoot.transform);
         stageRoots[8].name = "Stage 9 - Royal Hall";
         bosses[8] = CreateBoss(
             stageRoots[8].transform, player.transform, "King's Champion",
-            KayRoot + "/Characters/fbx/Knight.fbx",
+            MixamoKnightPath,
             KayRoot + "/Weapons/sword_2handed.fbx",
             "",
-            560, 1.64f, 3.70f, 9, new Vector3(0f, 0.05f, 16.0f));
+            560, 2.10f, 3.70f, 9, new Vector3(0f, 0.05f, 16.0f));
 
         stageRoots[9] = CreateThroneHall(stagesRoot.transform);
         stageRoots[9].name = "Stage 10 - Tower Entrance";
         bosses[9] = CreateBoss(
             stageRoots[9].transform, player.transform, "Tower Gatekeeper",
-            KayRoot + "/Characters/fbx/Barbarian.fbx",
+            MixamoKnightPath,
             KayRoot + "/Weapons/sword_2handed.fbx",
             KayRoot + "/Weapons/shield_round_barbarian.fbx",
-            680, 1.78f, 4.05f, 10, new Vector3(0f, 0.05f, 16.5f));
+            680, 2.18f, 4.05f, 10, new Vector3(0f, 0.05f, 16.5f));
 
         GameObject cameraObject = new GameObject("Main Camera");
         cameraObject.transform.SetParent(systems.transform, false);
@@ -154,6 +158,7 @@ public static class TinyParryArenaBuilder
         camera.allowHDR = true;
         cameraObject.AddComponent<AudioListener>();
         cameraObject.AddComponent<ThirdPersonCameraController>().SetTarget(player.transform);
+        CreateCharacterVisibilityLight(cameraObject.transform);
         ConfigureCameraRendering(cameraObject, camera);
         CreateGlobalPostProcessing(systems.transform);
         ConfigureRenderEnvironment();
@@ -189,9 +194,9 @@ public static class TinyParryArenaBuilder
         root.transform.localPosition = new Vector3(0f, 0.15f, -14f);
 
         CharacterController cc = root.AddComponent<CharacterController>();
-        cc.center = new Vector3(0f, 1f, 0f);
-        cc.height = 2f;
-        cc.radius = 0.45f;
+        cc.center = new Vector3(0f, 0.92f, 0f);
+        cc.height = 1.84f;
+        cc.radius = 0.38f;
 
         root.AddComponent<PlayerController>();
         root.AddComponent<PlayerLockOn>();
@@ -204,8 +209,9 @@ public static class TinyParryArenaBuilder
         root.AddComponent<KnockbackReceiver>();
         root.AddComponent<CharacterVisualController>();
 
-        GameObject visual = InstantiateCharacter(KayRoot + "/Characters/fbx/Knight.fbx", root.transform, "Knight Visual", 1f);
-        Animator animator = visual.GetComponent<Animator>();
+        GameObject visual = InstantiateCharacter(MixamoKnightPath, root.transform, "General Visual", 1.84f);
+        ApplyCharacterPalette(visual, 0);
+        Animator animator = visual.GetComponentInChildren<Animator>();
         Transform rightHand = GetBoneOrFallback(animator, HumanBodyBones.RightHand, visual.transform);
         Transform leftHand = GetBoneOrFallback(animator, HumanBodyBones.LeftHand, visual.transform);
 
@@ -263,7 +269,7 @@ public static class TinyParryArenaBuilder
         string weaponPath,
         string shieldPath,
         int health,
-        float scale,
+        float characterHeight,
         float attackRange,
         int stageLevel,
         Vector3 position)
@@ -271,24 +277,36 @@ public static class TinyParryArenaBuilder
         GameObject root = new GameObject(bossName);
         root.transform.SetParent(stageParent, false);
         root.transform.localPosition = position;
-        root.transform.localScale = Vector3.one * scale;
+        root.transform.localScale = Vector3.one;
 
         CapsuleCollider collider = root.AddComponent<CapsuleCollider>();
-        collider.center = new Vector3(0f, 1f, 0f);
-        collider.height = 2f;
-        collider.radius = 0.52f;
+        collider.center = new Vector3(0f, characterHeight * 0.5f, 0f);
+        collider.height = characterHeight;
+        collider.radius = Mathf.Clamp(characterHeight * 0.21f, 0.38f, 0.46f);
 
         CombatantHealth hp = root.AddComponent<CombatantHealth>();
         hp.Configure(health);
         root.AddComponent<KnockbackReceiver>();
         root.AddComponent<CharacterVisualController>();
 
-        GameObject visual = InstantiateCharacter(characterPath, root.transform, bossName + " Visual", 1f);
-        Animator animator = visual.GetComponent<Animator>();
+        GameObject visual = InstantiateCharacter(characterPath, root.transform, bossName + " Visual", characterHeight);
+        ApplyCharacterPalette(visual, stageLevel);
+        Animator animator = visual.GetComponentInChildren<Animator>();
         Transform rightHand = GetBoneOrFallback(animator, HumanBodyBones.RightHand, visual.transform);
         Transform leftHand = GetBoneOrFallback(animator, HumanBodyBones.LeftHand, visual.transform);
-        AttachEquipment(weaponPath, rightHand, bossName + " Weapon");
-        AttachEquipment(shieldPath, leftHand, bossName + " Shield");
+        Transform weapon = AttachEquipment(weaponPath, rightHand, bossName + " Weapon");
+        Transform shield = AttachEquipment(shieldPath, leftHand, bossName + " Shield");
+        if (weapon != null)
+        {
+            float targetWeaponLength = stageLevel == 5 ? 2.45f
+                : weaponPath.Contains("2handed") ? 1.65f
+                : 1.15f;
+            FitEquipmentToLength(weapon, targetWeaponLength);
+            if (stageLevel == 5)
+                weapon.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        }
+        if (shield != null)
+            FitEquipmentToLength(shield, 0.85f);
 
         BossAI ai = root.AddComponent<BossAI>();
         ai.SetPlayer(player);
@@ -748,19 +766,34 @@ public static class TinyParryArenaBuilder
         camera.allowMSAA = false;
     }
 
+    private static void CreateCharacterVisibilityLight(Transform cameraTransform)
+    {
+        GameObject lightObject = new GameObject("Character Readability Light");
+        lightObject.transform.SetParent(cameraTransform, false);
+        lightObject.transform.localPosition = Vector3.zero;
+        lightObject.transform.localRotation = Quaternion.identity;
+
+        Light light = lightObject.AddComponent<Light>();
+        light.type = LightType.Directional;
+        light.color = new Color(1f, 0.90f, 0.78f);
+        light.intensity = 0.38f;
+        light.shadows = LightShadows.None;
+        light.renderMode = LightRenderMode.ForcePixel;
+    }
+
     private static void ConfigureRenderEnvironment()
     {
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.ExponentialSquared;
-        RenderSettings.fogColor = new Color(0.035f, 0.045f, 0.065f);
-        RenderSettings.fogDensity = 0.008f;
+        RenderSettings.fogColor = new Color(0.055f, 0.065f, 0.085f);
+        RenderSettings.fogDensity = 0.0065f;
         RenderSettings.ambientMode = AmbientMode.Trilight;
-        RenderSettings.ambientSkyColor = new Color(0.12f, 0.15f, 0.21f);
-        RenderSettings.ambientEquatorColor = new Color(0.07f, 0.065f, 0.075f);
-        RenderSettings.ambientGroundColor = new Color(0.025f, 0.022f, 0.02f);
-        RenderSettings.ambientIntensity = 0.78f;
-        RenderSettings.reflectionIntensity = 0.72f;
-        RenderSettings.subtractiveShadowColor = new Color(0.045f, 0.05f, 0.065f);
+        RenderSettings.ambientSkyColor = new Color(0.20f, 0.23f, 0.30f);
+        RenderSettings.ambientEquatorColor = new Color(0.12f, 0.11f, 0.13f);
+        RenderSettings.ambientGroundColor = new Color(0.055f, 0.048f, 0.045f);
+        RenderSettings.ambientIntensity = 0.92f;
+        RenderSettings.reflectionIntensity = 0.82f;
+        RenderSettings.subtractiveShadowColor = new Color(0.075f, 0.08f, 0.10f);
     }
 
     private static void CreateGlobalPostProcessing(Transform parent)
@@ -780,14 +813,14 @@ public static class TinyParryArenaBuilder
         tonemapping.mode.Override(TonemappingMode.ACES);
 
         ColorAdjustments color = GetOrAddVolumeComponent<ColorAdjustments>(profile);
-        color.postExposure.Override(-0.12f);
-        color.contrast.Override(17f);
-        color.colorFilter.Override(new Color(0.94f, 0.96f, 1f));
-        color.saturation.Override(-9f);
+        color.postExposure.Override(0.28f);
+        color.contrast.Override(10f);
+        color.colorFilter.Override(new Color(1f, 0.98f, 0.95f));
+        color.saturation.Override(-4f);
 
         WhiteBalance whiteBalance = GetOrAddVolumeComponent<WhiteBalance>(profile);
-        whiteBalance.temperature.Override(-7f);
-        whiteBalance.tint.Override(-2f);
+        whiteBalance.temperature.Override(-2f);
+        whiteBalance.tint.Override(0f);
 
         Bloom bloom = GetOrAddVolumeComponent<Bloom>(profile);
         bloom.threshold.Override(1.15f);
@@ -795,7 +828,7 @@ public static class TinyParryArenaBuilder
         bloom.scatter.Override(0.55f);
 
         Vignette vignette = GetOrAddVolumeComponent<Vignette>(profile);
-        vignette.intensity.Override(0.2f);
+        vignette.intensity.Override(0.12f);
         vignette.smoothness.Override(0.42f);
 
         EditorUtility.SetDirty(profile);
@@ -910,23 +943,165 @@ public static class TinyParryArenaBuilder
         material.enableInstancing = true;
     }
 
-    private static GameObject InstantiateCharacter(string path, Transform parent, string name, float scale)
+    private static void ConfigureHumanoidModelImporter(string path)
+    {
+        ModelImporter importer = AssetImporter.GetAtPath(path) as ModelImporter;
+        if (importer == null)
+            throw new FileNotFoundException("Mixamo character model is missing or has not finished importing", path);
+
+        bool changed = false;
+        if (importer.animationType != ModelImporterAnimationType.Human)
+        {
+            importer.animationType = ModelImporterAnimationType.Human;
+            changed = true;
+        }
+
+        if (importer.avatarSetup != ModelImporterAvatarSetup.CreateFromThisModel)
+        {
+            importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+            changed = true;
+        }
+
+        if (changed)
+            importer.SaveAndReimport();
+    }
+
+    private static GameObject InstantiateCharacter(string path, Transform parent, string name, float targetHeight)
     {
         GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-        if (prefab == null) throw new FileNotFoundException("KayKit model missing", path);
+        if (prefab == null) throw new FileNotFoundException("Character model missing", path);
         GameObject go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
         go.name = name;
         go.transform.SetParent(parent, false);
         go.transform.localPosition = Vector3.zero;
         go.transform.localRotation = Quaternion.identity;
-        go.transform.localScale = Vector3.one * scale;
-        Animator animator = go.GetComponent<Animator>();
+        go.transform.localScale = Vector3.one;
+
+        Renderer[] renderers = go.GetComponentsInChildren<Renderer>(true);
+        if (renderers.Length > 0)
+        {
+            Bounds bounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++)
+                bounds.Encapsulate(renderers[i].bounds);
+
+            float fittedScale = targetHeight / Mathf.Max(0.001f, bounds.size.y);
+            go.transform.localScale = Vector3.one * fittedScale;
+
+            bounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++)
+                bounds.Encapsulate(renderers[i].bounds);
+            go.transform.position += Vector3.up * (parent.position.y - bounds.min.y);
+        }
+
+        Animator animator = go.GetComponentInChildren<Animator>();
         if (animator != null)
         {
             animator.runtimeAnimatorController = null;
             animator.applyRootMotion = false;
         }
+
+        foreach (Collider childCollider in go.GetComponentsInChildren<Collider>(true))
+            Object.DestroyImmediate(childCollider);
+
         return go;
+    }
+
+    private static void ApplyCharacterPalette(GameObject visual, int stageLevel)
+    {
+        Color[] palette =
+        {
+            new Color(0.62f, 0.66f, 0.72f), // Player: readable steel.
+            new Color(0.52f, 0.24f, 0.16f),
+            new Color(0.30f, 0.38f, 0.48f),
+            new Color(0.58f, 0.47f, 0.25f),
+            new Color(0.28f, 0.30f, 0.34f),
+            new Color(0.42f, 0.46f, 0.40f),
+            new Color(0.46f, 0.25f, 0.17f),
+            new Color(0.42f, 0.46f, 0.54f),
+            new Color(0.20f, 0.24f, 0.30f),
+            new Color(0.56f, 0.50f, 0.34f),
+            new Color(0.24f, 0.22f, 0.20f)
+        };
+
+        int paletteIndex = Mathf.Clamp(stageLevel, 0, palette.Length - 1);
+        string paletteName = stageLevel == 0 ? "PlayerGeneral" : $"Boss{stageLevel:00}";
+        Renderer[] renderers = visual.GetComponentsInChildren<Renderer>(true);
+        int materialIndex = 0;
+
+        foreach (Renderer renderer in renderers)
+        {
+            Material[] sourceMaterials = renderer.sharedMaterials;
+            Material[] variants = new Material[sourceMaterials.Length];
+            for (int i = 0; i < sourceMaterials.Length; i++)
+                variants[i] = GetOrCreateCharacterMaterialVariant(
+                    sourceMaterials[i], paletteName, materialIndex++, palette[paletteIndex], stageLevel == 0);
+            renderer.sharedMaterials = variants;
+        }
+    }
+
+    private static Material GetOrCreateCharacterMaterialVariant(
+        Material source,
+        string paletteName,
+        int index,
+        Color tint,
+        bool isPlayer)
+    {
+        string sourceName = source != null ? source.name.ToLowerInvariant() : string.Empty;
+        bool naturalSurface = sourceName.Contains("skin") || sourceName.Contains("face") ||
+                              sourceName.Contains("eye") || sourceName.Contains("hair");
+        string path = $"{CharacterMaterialRoot}/{paletteName}_{index:00}.mat";
+        Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
+        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+        if (shader == null)
+            throw new System.InvalidOperationException("URP Lit shader is unavailable.");
+
+        Texture baseTexture = source != null ? source.mainTexture : null;
+        Texture normalTexture = source != null && source.HasProperty("_BumpMap")
+            ? source.GetTexture("_BumpMap")
+            : null;
+        Texture metallicTexture = source != null && source.HasProperty("_MetallicGlossMap")
+            ? source.GetTexture("_MetallicGlossMap")
+            : null;
+        Texture occlusionTexture = source != null && source.HasProperty("_OcclusionMap")
+            ? source.GetTexture("_OcclusionMap")
+            : null;
+        Color sourceColor = source != null ? source.color : Color.white;
+        Color baseColor = naturalSurface
+            ? sourceColor
+            : Color.Lerp(sourceColor, tint, isPlayer ? 0.32f : 0.42f);
+        baseColor.a = sourceColor.a;
+
+        if (material == null)
+        {
+            material = new Material(shader) { name = $"{paletteName}_{index:00}" };
+            AssetDatabase.CreateAsset(material, path);
+        }
+        else
+        {
+            material.shader = shader;
+        }
+
+        if (baseTexture != null && material.HasProperty("_BaseMap"))
+            material.SetTexture("_BaseMap", baseTexture);
+        if (normalTexture != null && material.HasProperty("_BumpMap"))
+        {
+            material.SetTexture("_BumpMap", normalTexture);
+            material.EnableKeyword("_NORMALMAP");
+        }
+        if (metallicTexture != null && material.HasProperty("_MetallicGlossMap"))
+        {
+            material.SetTexture("_MetallicGlossMap", metallicTexture);
+            material.EnableKeyword("_METALLICSPECGLOSSMAP");
+        }
+        if (occlusionTexture != null && material.HasProperty("_OcclusionMap"))
+            material.SetTexture("_OcclusionMap", occlusionTexture);
+        ApplyMaterialProperties(
+            material,
+            baseColor,
+            naturalSurface ? 0f : (isPlayer ? 0.42f : 0.32f),
+            naturalSurface ? 0.28f : 0.46f);
+        EditorUtility.SetDirty(material);
+        return material;
     }
 
     private static Transform GetBoneOrFallback(Animator animator, HumanBodyBones bone, Transform fallback)
@@ -938,18 +1113,26 @@ public static class TinyParryArenaBuilder
         }
 
         string[] names = bone == HumanBodyBones.RightHand
-            ? new[] { "handslot.r", "hand.r" }
-            : new[] { "handslot.l", "hand.l" };
+            ? new[] { "handslot.r", "hand.r", "mixamorig:RightHand", "RightHand" }
+            : new[] { "handslot.l", "hand.l", "mixamorig:LeftHand", "LeftHand" };
         Transform[] all = fallback.GetComponentsInChildren<Transform>(true);
         foreach (string wanted in names)
             foreach (Transform t in all)
                 if (string.Equals(t.name, wanted, System.StringComparison.OrdinalIgnoreCase))
                     return t;
+
+        string handSuffix = bone == HumanBodyBones.RightHand ? "righthand" : "lefthand";
+        foreach (Transform t in all)
+            if (t.name.EndsWith(handSuffix, System.StringComparison.OrdinalIgnoreCase))
+                return t;
         return fallback;
     }
 
     private static Transform AttachEquipment(string path, Transform parent, string name)
     {
+        if (string.IsNullOrWhiteSpace(path))
+            return null;
+
         GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
         GameObject go = prefab != null
             ? (GameObject)PrefabUtility.InstantiatePrefab(prefab)
@@ -962,6 +1145,22 @@ public static class TinyParryArenaBuilder
         foreach (Collider collider in go.GetComponentsInChildren<Collider>())
             Object.DestroyImmediate(collider);
         return go.transform;
+    }
+
+    private static void FitEquipmentToLength(Transform equipment, float targetLength)
+    {
+        Renderer[] renderers = equipment.GetComponentsInChildren<Renderer>(true);
+        if (renderers.Length == 0)
+            return;
+
+        Bounds bounds = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++)
+            bounds.Encapsulate(renderers[i].bounds);
+        float longestDimension = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
+        if (longestDimension <= 0.001f)
+            return;
+
+        equipment.localScale *= targetLength / longestDimension;
     }
 
     private static TinyParryHUD CreateHUD(Transform parent, CombatantHealth player)

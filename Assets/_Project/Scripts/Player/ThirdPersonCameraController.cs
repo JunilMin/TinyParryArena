@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 
 public sealed class ThirdPersonCameraController : MonoBehaviour
 {
+    [SerializeField] private bool useRecommendedCombatFraming = true;
     [SerializeField] private Transform target;
     [SerializeField] private PlayerLockOn lockOn;
     [SerializeField] private float distance = 10.6f;
@@ -19,13 +20,17 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
     [SerializeField, Min(0.01f)] private float lockOnRotationSmoothTime = 0.04f;
 
     [Header("Lock-On Framing")]
-    [SerializeField, Min(2f)] private float lockOnDistance = 7.4f;
-    [SerializeField, Min(0.5f)] private float lockOnPivotHeight = 1.7f;
-    [SerializeField, Range(-5f, 35f)] private float lockOnCameraPitch = 10.5f;
-    [SerializeField, Range(-3f, 3f)] private float lockOnShoulderOffset = 1.25f;
-    [SerializeField, Range(0.4f, 0.75f)] private float lockOnFocusBias = 0.58f;
-    [SerializeField, Min(0f)] private float lockOnDistancePerMeter = 0.22f;
-    [SerializeField, Min(0f)] private float lockOnMaxDistanceExtension = 1.6f;
+    [SerializeField, Min(2f)] private float lockOnDistance = 6.6f;
+    [SerializeField, Min(0.5f)] private float lockOnPivotHeight = 1.58f;
+    [SerializeField, Range(-5f, 35f)] private float lockOnCameraPitch = 8f;
+    [SerializeField, Range(-3f, 3f)] private float lockOnShoulderOffset = 1.65f;
+    [SerializeField, Range(-20f, 20f)] private float lockOnOrbitAngle = 9f;
+    [SerializeField, Range(0.4f, 0.75f)] private float lockOnFocusBias = 0.62f;
+    [SerializeField, Min(0f)] private float lockOnDistancePerMeter = 0.16f;
+    [SerializeField, Min(0f)] private float lockOnMaxDistanceExtension = 1.1f;
+    [SerializeField, Range(35f, 75f)] private float freeLookFieldOfView = 58f;
+    [SerializeField, Range(35f, 75f)] private float lockOnFieldOfView = 52f;
+    [SerializeField, Min(0.01f)] private float fieldOfViewSmoothTime = 0.16f;
 
     [Header("Collision")]
     [SerializeField, Min(0.05f)] private float collisionRadius = 0.35f;
@@ -41,11 +46,30 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
     private float pitchVelocity;
     private Vector3 velocity;
     private readonly RaycastHit[] collisionHits = new RaycastHit[12];
+    private Camera controlledCamera;
+    private float fieldOfViewVelocity;
 
     public void SetTarget(Transform value)
     {
         target = value;
         lockOn = value != null ? value.GetComponent<PlayerLockOn>() : null;
+    }
+
+    private void Awake()
+    {
+        controlledCamera = GetComponent<Camera>();
+        if (!useRecommendedCombatFraming)
+            return;
+
+        lockOnDistance = 6.6f;
+        lockOnPivotHeight = 1.58f;
+        lockOnCameraPitch = 8f;
+        lockOnShoulderOffset = 1.65f;
+        lockOnOrbitAngle = 9f;
+        lockOnFocusBias = 0.62f;
+        lockOnDistancePerMeter = 0.16f;
+        lockOnMaxDistanceExtension = 1.1f;
+        lockOnFieldOfView = 52f;
     }
 
     private void Start()
@@ -63,12 +87,22 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
 
         bool isLockedOn = lockOn != null && lockOn.IsLockedOn;
 
+        if (controlledCamera != null)
+        {
+            float targetFieldOfView = isLockedOn ? lockOnFieldOfView : freeLookFieldOfView;
+            controlledCamera.fieldOfView = Mathf.SmoothDamp(
+                controlledCamera.fieldOfView,
+                targetFieldOfView,
+                ref fieldOfViewVelocity,
+                fieldOfViewSmoothTime);
+        }
+
         if (isLockedOn)
         {
             Vector3 targetDirection = lockOn.CurrentTarget.position - target.position;
             targetDirection.y = 0f;
             if (targetDirection.sqrMagnitude > 0.001f)
-                desiredYaw = Quaternion.LookRotation(targetDirection.normalized).eulerAngles.y;
+                desiredYaw = Quaternion.LookRotation(targetDirection.normalized).eulerAngles.y + lockOnOrbitAngle;
             desiredPitch = lockOnCameraPitch;
         }
         else
@@ -101,7 +135,15 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
         Vector3 cameraDirection = -(orbitRotation * Vector3.forward);
         Vector3 desiredOffset = cameraDirection * activeDistance;
         if (isLockedOn)
-            desiredOffset += orbitRotation * Vector3.right * lockOnShoulderOffset;
+        {
+            float separation = Vector3.Distance(target.position, lockOn.CurrentTarget.position);
+            float closeRangeShoulder = lockOnShoulderOffset + 0.25f;
+            float activeShoulder = Mathf.Lerp(
+                closeRangeShoulder,
+                lockOnShoulderOffset,
+                Mathf.InverseLerp(2.2f, 6f, separation));
+            desiredOffset += orbitRotation * Vector3.right * activeShoulder;
+        }
 
         float desiredOffsetLength = desiredOffset.magnitude;
         Vector3 collisionDirection = desiredOffset / desiredOffsetLength;
