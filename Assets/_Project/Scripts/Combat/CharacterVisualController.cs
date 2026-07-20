@@ -30,7 +30,9 @@ public sealed class CharacterVisualController : MonoBehaviour
     private Vector3 actionEuler;
     private Vector3 visualBasePosition;
     private Quaternion visualBaseRotation;
+    private float visualGroundOffset;
     private bool dead;
+    private SwordAnimationDriver swordAnimation;
 
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
     private static readonly int HitHash = Animator.StringToHash("Hit");
@@ -38,14 +40,61 @@ public sealed class CharacterVisualController : MonoBehaviour
 
     private void Awake()
     {
+        if (GetComponent<PlayerCombat>() != null &&
+            PlayerCharacterVisualBootstrap.TryReplace(
+                gameObject,
+                out Animator replacementAnimator,
+                out Transform replacementRoot))
+        {
+            animator = replacementAnimator;
+            visualRoot = replacementRoot;
+        }
+
         if (animator == null) animator = GetComponentInChildren<Animator>();
         if (visualRoot == null && animator != null) visualRoot = animator.transform;
         if (visualRoot == null) visualRoot = transform;
 
+        if (GetComponent<PlayerCombat>() != null && animator != null && animator.isHuman)
+        {
+            SwordCombatAnimationLibrary library =
+                Resources.Load<SwordCombatAnimationLibrary>("Animations/PlayerSwordCombat");
+            if (library != null && library.IsValid)
+            {
+                swordAnimation = GetComponent<SwordAnimationDriver>();
+                if (swordAnimation == null)
+                    swordAnimation = gameObject.AddComponent<SwordAnimationDriver>();
+                swordAnimation.Initialize(animator, library);
+            }
+        }
+
         visualBasePosition = visualRoot.localPosition;
         visualBaseRotation = visualRoot.localRotation;
         CacheBones();
+        visualGroundOffset = GetLowestRendererY() - transform.position.y;
         lastPosition = transform.position;
+    }
+
+    public bool UsesAuthoredSwordAnimation =>
+        swordAnimation != null && swordAnimation.IsAuthoredAnimationEnabled;
+
+    public void SetSwordAnimationEnabled(bool value)
+    {
+        if (swordAnimation != null)
+            swordAnimation.SetAuthoredAnimationEnabled(value);
+    }
+
+    public bool TryPlaySwordAttack(
+        int combo,
+        float speed,
+        out float hitDelay,
+        out float totalDuration)
+    {
+        if (swordAnimation != null)
+            return swordAnimation.PlayAttack(combo, speed, out hitDelay, out totalDuration);
+
+        hitDelay = 0f;
+        totalDuration = 0f;
+        return false;
     }
 
     private void CacheBones()
@@ -108,13 +157,29 @@ public sealed class CharacterVisualController : MonoBehaviour
     {
         moveSpeed = Vector3.Distance(transform.position, lastPosition) / Mathf.Max(Time.deltaTime, 0.0001f);
         lastPosition = transform.position;
+        if (swordAnimation != null)
+            swordAnimation.SetMoveSpeed(moveSpeed);
         if (animator != null && animator.runtimeAnimatorController != null)
             animator.SetFloat(SpeedHash, moveSpeed, speedDamp, Time.deltaTime);
     }
 
     private void LateUpdate()
     {
-        if (!dead) ApplyProceduralStance();
+        if (dead)
+            return;
+
+        if (UsesAuthoredSwordAnimation)
+        {
+            // Imported Mixamo clips contain root/hip offsets from their source rig.
+            // Keep the visual root anchored to the gameplay capsule and correct any
+            // remaining retargeting height so feet cannot sink below the arena floor.
+            visualRoot.localPosition = visualBasePosition;
+            visualRoot.localRotation = visualBaseRotation;
+            AlignVisualToGround(transform.position.y + visualGroundOffset);
+            return;
+        }
+
+        ApplyProceduralStance();
     }
 
     private void ApplyProceduralStance()
@@ -164,8 +229,19 @@ public sealed class CharacterVisualController : MonoBehaviour
         upper.rotation = Quaternion.FromToRotation(current.normalized, desired) * upper.rotation;
     }
 
-    public void PlayAttack(int combo) => StartAction(AttackPose(combo, 1f));
-    public void PlayAttack(int combo, float intensity) => StartAction(AttackPose(combo, intensity));
+    public void PlayAttack(int combo)
+    {
+        if (swordAnimation != null && swordAnimation.PlayAttack(combo, 1f, out _, out _))
+            return;
+        StartAction(AttackPose(combo, 1f));
+    }
+
+    public void PlayAttack(int combo, float intensity)
+    {
+        if (swordAnimation != null && swordAnimation.PlayAttack(combo, 1f, out _, out _))
+            return;
+        StartAction(AttackPose(combo, intensity));
+    }
     public void PlayTelegraph(int combo, float duration, float intensity = 1.45f)
     {
         Vector3 pose = combo == 0 ? new Vector3(-72f, -18f, 58f)
@@ -173,17 +249,33 @@ public sealed class CharacterVisualController : MonoBehaviour
             : new Vector3(-34f, 12f, 86f);
         StartAction(ActionPose(pose * intensity, Mathf.Min(0.16f, duration * 0.35f), Mathf.Max(0.08f, duration * 0.45f), Mathf.Min(0.16f, duration * 0.20f)));
     }
-    public void PlayParry() => StartAction(ActionPose(new Vector3(-18f, -10f, 42f), 0.08f, 0.16f, 0.11f));
-    public void PlayDrink() => StartAction(ActionPose(new Vector3(-40f, 0f, 20f), 0.12f, 0.35f, 0.18f));
+    public void PlayParry()
+    {
+        if (swordAnimation != null && swordAnimation.PlayParry())
+            return;
+        StartAction(ActionPose(new Vector3(-18f, -10f, 42f), 0.08f, 0.16f, 0.11f));
+    }
+    public void PlayDrink()
+    {
+        if (swordAnimation != null && swordAnimation.PlayDrink())
+            return;
+        StartAction(ActionPose(new Vector3(-40f, 0f, 20f), 0.12f, 0.35f, 0.18f));
+    }
 
     public void PlayHit()
     {
+        if (swordAnimation != null && swordAnimation.PlayHit())
+            return;
         if (animator != null && animator.runtimeAnimatorController != null) animator.SetTrigger(HitHash);
         StartAction(ActionPose(new Vector3(-12f, 0f, 25f), 0.06f, 0.16f, 0.12f));
     }
 
-    public void PlayStagger(float duration = 1.5f) =>
+    public void PlayStagger(float duration = 1.5f)
+    {
+        if (swordAnimation != null && swordAnimation.PlayHit())
+            return;
         StartAction(ActionPose(new Vector3(28f, 0f, -20f), 0.09f, Mathf.Max(0.1f, duration - 0.22f), 0.13f));
+    }
 
     public void PlayDeath()
     {
@@ -193,6 +285,8 @@ public sealed class CharacterVisualController : MonoBehaviour
         actionRoutine = null;
         actionWeight = 0f;
         actionEuler = Vector3.zero;
+        if (swordAnimation != null && swordAnimation.PlayDeath())
+            return;
         if (animator != null && animator.runtimeAnimatorController != null) animator.SetTrigger(DeathHash);
         StartCoroutine(DeathRoutine());
     }
@@ -239,6 +333,14 @@ public sealed class CharacterVisualController : MonoBehaviour
         float currentLowest = GetLowestRendererY();
         float correction = groundY - currentLowest;
         if (correction > 0.0001f)
+            visualRoot.position += Vector3.up * correction;
+    }
+
+    private void AlignVisualToGround(float groundY)
+    {
+        float currentLowest = GetLowestRendererY();
+        float correction = groundY - currentLowest;
+        if (Mathf.Abs(correction) > 0.0001f)
             visualRoot.position += Vector3.up * correction;
     }
 

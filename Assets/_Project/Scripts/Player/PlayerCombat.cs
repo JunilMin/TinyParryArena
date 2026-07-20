@@ -88,6 +88,10 @@ public sealed class PlayerCombat : MonoBehaviour
     public void SetWeaponClass(PlayerWeaponClass value)
     {
         weaponClass = value;
+        if (visual == null) visual = GetComponent<CharacterVisualController>();
+        if (visual != null)
+            visual.SetSwordAnimationEnabled(
+                value == PlayerWeaponClass.Unchosen || value == PlayerWeaponClass.Greatsword);
         if (swordModel != null) swordModel.SetActive(value == PlayerWeaponClass.Unchosen || value == PlayerWeaponClass.Greatsword);
         if (shieldModel != null) shieldModel.SetActive(false);
         if (rightDaggerModel != null) rightDaggerModel.SetActive(value == PlayerWeaponClass.DualSwords);
@@ -254,7 +258,6 @@ public sealed class PlayerCombat : MonoBehaviour
         FaceLockedTarget();
         int attack = comboIndex;
         lastAttackTime = Time.time;
-        if (visual != null) visual.PlayAttack(attack);
 
         Quaternion start = weaponPivot != null ? weaponPivot.localRotation : Quaternion.identity;
         Vector3 startPosition = weaponPivot != null ? weaponPivot.localPosition : Vector3.zero;
@@ -300,21 +303,59 @@ public sealed class PlayerCombat : MonoBehaviour
         windupTime /= effectiveSpeed;
         contactTime /= effectiveSpeed;
 
+        bool usesSword = weaponClass == PlayerWeaponClass.Unchosen ||
+                         weaponClass == PlayerWeaponClass.Greatsword;
+        if (usesSword &&
+            visual != null &&
+            visual.TryPlaySwordAttack(
+                attack,
+                effectiveSpeed,
+                out float hitDelay,
+                out float totalDuration))
+        {
+            float swingLead = Mathf.Min(0.12f, hitDelay * 0.35f);
+            float preSwing = Mathf.Max(0f, hitDelay - swingLead);
+            if (preSwing > 0f)
+                yield return new WaitForSeconds(preSwing);
+            GameAudioManager.Instance.PlayPlayerSwing(attack);
+            if (swingLead > 0f)
+                yield return new WaitForSeconds(swingLead);
+            DealDamage(CalculateComboDamage(attack));
+            float recovery = Mathf.Max(0.05f, totalDuration - hitDelay);
+            yield return new WaitForSeconds(recovery);
+
+            comboIndex = (comboIndex + 1) % comboDamage.Length;
+            busy = false;
+            yield break;
+        }
+
+        if (visual != null) visual.PlayAttack(attack);
+
         yield return MoveAndRotateWeapon(startPosition, windupPosition, start, windup, windupTime);
 
         // Play the whoosh when the blade leaves the wind-up pose, not when the button is pressed.
         GameAudioManager.Instance.PlayPlayerSwing(attack);
         yield return MoveAndRotateWeapon(windupPosition, contactPosition, windup, contact, contactTime);
-        int baseDamage = comboDamage[Mathf.Clamp(attack, 0, comboDamage.Length - 1)];
-        float classDamage = weaponClass == PlayerWeaponClass.Spear ? 1.10f : weaponClass == PlayerWeaponClass.DualSwords ? 0.90f : weaponClass == PlayerWeaponClass.Greatsword ? 1.28f : 1f;
-        float skillBonus = 1f + skillRanks[0] * 0.025f;
-        skillBonus *= PassiveDamageMultiplier();
-        DealDamage(Mathf.Max(1, Mathf.RoundToInt(baseDamage * damageMultiplier * classDamage * skillBonus)));
+        DealDamage(CalculateComboDamage(attack));
         yield return new WaitForSeconds(0.045f);
         yield return MoveAndRotateWeapon(contactPosition, startPosition, contact, start, (attack == 2 ? 0.20f : 0.15f) / effectiveSpeed);
 
         comboIndex = (comboIndex + 1) % comboDamage.Length;
         busy = false;
+    }
+
+    private int CalculateComboDamage(int attack)
+    {
+        int baseDamage = comboDamage[Mathf.Clamp(attack, 0, comboDamage.Length - 1)];
+        float classDamage = weaponClass == PlayerWeaponClass.Spear
+            ? 1.10f
+            : weaponClass == PlayerWeaponClass.DualSwords
+                ? 0.90f
+                : weaponClass == PlayerWeaponClass.Greatsword ? 1.28f : 1f;
+        float skillBonus = (1f + skillRanks[0] * 0.025f) * PassiveDamageMultiplier();
+        return Mathf.Max(
+            1,
+            Mathf.RoundToInt(baseDamage * damageMultiplier * classDamage * skillBonus));
     }
 
     private IEnumerator ParryRoutine()
