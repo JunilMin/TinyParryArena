@@ -6,9 +6,10 @@ using UnityEngine.InputSystem;
 
 public sealed class PlayerCombat : MonoBehaviour
 {
+    [SerializeField] private bool useRecommendedMeleeTargeting = true;
     [SerializeField] private int[] comboDamage = { 14, 18, 28 };
-    [SerializeField] private float attackRange = 2.1f;
-    [SerializeField] private float attackAngle = 75f;
+    [SerializeField] private float attackRange = 2.65f;
+    [SerializeField] private float attackAngle = 95f;
     [SerializeField] private float comboResetTime = 0.85f;
     [SerializeField] private float parryWindow = 0.23f;
     [SerializeField] private float parryCooldown = 0.55f;
@@ -37,6 +38,7 @@ public sealed class PlayerCombat : MonoBehaviour
     private bool controlsEnabled = true;
     private Coroutine parriedRoutine;
     private CharacterVisualController visual;
+    private PlayerLockOn lockOn;
     private float damageMultiplier = 1f;
     private float attackSpeedMultiplier = 1f;
     private readonly int[] skillRanks = new int[PlayerProgression.TotalSkillCount];
@@ -108,6 +110,13 @@ public sealed class PlayerCombat : MonoBehaviour
     private void Awake()
     {
         visual = GetComponent<CharacterVisualController>();
+        lockOn = GetComponent<PlayerLockOn>();
+        if (useRecommendedMeleeTargeting)
+        {
+            attackRange = Mathf.Max(attackRange, 2.65f);
+            attackAngle = Mathf.Max(attackAngle, 95f);
+        }
+
         if (shieldPivot != null)
         {
             shieldIdleRotation = shieldPivot.localRotation;
@@ -242,6 +251,7 @@ public sealed class PlayerCombat : MonoBehaviour
     private IEnumerator AttackRoutine()
     {
         busy = true;
+        FaceLockedTarget();
         int attack = comboIndex;
         lastAttackTime = Time.time;
         if (visual != null) visual.PlayAttack(attack);
@@ -710,6 +720,17 @@ public sealed class PlayerCombat : MonoBehaviour
         return weaponClass == PlayerWeaponClass.Spear ? skillRanks[5] * 0.10f : 0f;
     }
 
+    private void FaceLockedTarget()
+    {
+        if (lockOn == null || !lockOn.IsLockedOn)
+            return;
+
+        Vector3 direction = lockOn.CurrentTarget.position - transform.position;
+        direction.y = 0f;
+        if (direction.sqrMagnitude > 0.001f)
+            transform.rotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+    }
+
     private void DealDamage(int damage)
     {
         CombatantHealth[] targets =
@@ -726,12 +747,20 @@ public sealed class PlayerCombat : MonoBehaviour
                 continue;
 
             Vector3 delta = target.transform.position - transform.position;
+            delta.y = 0f;
             float distance = delta.magnitude;
 
             if (distance > attackRange + PassiveRangeBonus())
                 continue;
 
-            if (Vector3.Angle(transform.forward, delta.normalized) > attackAngle * 0.5f)
+            Vector3 attackForward = transform.forward;
+            attackForward.y = 0f;
+            bool isLockedTarget = lockOn != null &&
+                                  lockOn.IsLockedOn &&
+                                  lockOn.CurrentTarget == target.transform;
+            if (!isLockedTarget &&
+                delta.sqrMagnitude > 0.001f &&
+                Vector3.Angle(attackForward.normalized, delta.normalized) > attackAngle * 0.5f)
                 continue;
 
             if (distance < nearest)

@@ -24,6 +24,7 @@ public sealed class PlayerController : MonoBehaviour
 
     private CharacterController controller;
     private CombatantHealth health;
+    private PlayerLockOn lockOn;
     private float verticalVelocity;
     private bool controlsEnabled = true;
     private bool dashing;
@@ -38,6 +39,7 @@ public sealed class PlayerController : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
         health = GetComponent<CombatantHealth>();
+        lockOn = GetComponent<PlayerLockOn>();
     }
 
     private void Start()
@@ -82,7 +84,7 @@ public sealed class PlayerController : MonoBehaviour
             return;
         }
 
-        if (move.sqrMagnitude > 0.001f)
+        if (move.sqrMagnitude > 0.001f && (lockOn == null || !lockOn.IsLockedOn))
         {
             Quaternion target = Quaternion.LookRotation(move, Vector3.up);
             transform.rotation = Quaternion.Slerp(transform.rotation, target, rotationSpeed * Time.deltaTime);
