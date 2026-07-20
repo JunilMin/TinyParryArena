@@ -54,6 +54,12 @@ public static class PlayerCharacterVisualBootstrap
 
     private static Transform FindHand(Animator animator, Transform root, bool right)
     {
+        // KayKit rigs provide dedicated equipment sockets. They include the grip
+        // orientation and offset that a raw humanoid hand bone does not.
+        string socketName = right ? "handslot.r" : "handslot.l";
+        Transform socket = FindDescendant(root, socketName);
+        if (socket != null) return socket;
+
         if (animator != null && animator.isHuman)
         {
             Transform hand = animator.GetBoneTransform(right ? HumanBodyBones.RightHand : HumanBodyBones.LeftHand);
@@ -61,9 +67,7 @@ public static class PlayerCharacterVisualBootstrap
         }
 
         string wanted = right ? "hand.r" : "hand.l";
-        foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
-            if (string.Equals(child.name, wanted, StringComparison.OrdinalIgnoreCase)) return child;
-        return root;
+        return FindDescendant(root, wanted);
     }
 
     private static void ReparentEquipment(Transform equipment, Transform hand)
