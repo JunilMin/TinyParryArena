@@ -221,7 +221,7 @@ public sealed class EnemyAI : MonoBehaviour
 
     private IEnumerator Thrust()
     {
-        SetBodyColor(Color.magenta);
+        SetBodyColor(new Color(1f, 0.32f, 0.04f));
 
         Quaternion aim = Quaternion.Euler(0f, 0f, 90f);
         Vector3 pulledBack =
