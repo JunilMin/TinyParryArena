@@ -21,6 +21,11 @@ public sealed class BossAI : MonoBehaviour
     [SerializeField] private float parryStunDuration = 2.0f;
     [SerializeField] private float turnSpeed = 13f;
 
+    [Header("Combat Spacing")]
+    [SerializeField, Min(0.5f)] private float minimumCombatSpacing = 2.15f;
+    [SerializeField, Min(0.1f)] private float spacingCorrectionSpeed = 3.4f;
+    [SerializeField, Min(0f)] private float preferredSpacingPadding = 0.35f;
+
     [Header("Posture")]
     [SerializeField] private int maxPosture = 100;
     [SerializeField] private int postureDamagePerParry = 35;
@@ -182,13 +187,22 @@ public sealed class BossAI : MonoBehaviour
 
         Vector3 delta = player.position - transform.position;
         delta.y = 0f;
+        float distance = delta.magnitude;
+
+        if (!stunned)
+        {
+            MaintainMinimumSpacing(delta, distance);
+            delta = player.position - transform.position;
+            delta.y = 0f;
+            distance = delta.magnitude;
+        }
+
         FacePlayer(delta, busy ? turnSpeed * 1.35f : turnSpeed);
 
         if (busy || stunned)
             return;
 
-        float distance = delta.magnitude;
-        float preferredRange = attackRange * 0.88f;
+        float preferredRange = Mathf.Max(minimumCombatSpacing + preferredSpacingPadding, attackRange * 0.82f);
 
         if (distance > attackRange)
         {
@@ -198,14 +212,26 @@ public sealed class BossAI : MonoBehaviour
         }
 
         // Prevent the boss from standing directly inside the player.
-        if (distance < preferredRange * 0.56f)
+        if (distance < preferredRange)
         {
-            transform.position -= delta.normalized * moveSpeed * 0.55f * Time.deltaTime;
+            transform.position -= delta.normalized * moveSpeed * 0.7f * Time.deltaTime;
             return;
         }
 
         int selected = patternIndex++ % Mathf.Max(3, patternCount);
         StartCoroutine(RunPattern(selected));
+    }
+
+    private void MaintainMinimumSpacing(Vector3 flatDelta, float distance)
+    {
+        if (distance >= minimumCombatSpacing)
+            return;
+
+        Vector3 away = distance > 0.001f ? -flatDelta / distance : -transform.forward;
+        float correction = Mathf.Min(
+            minimumCombatSpacing - distance,
+            spacingCorrectionSpeed * Time.deltaTime);
+        transform.position += away * correction;
     }
 
     private void FacePlayer(Vector3 flatDelta, float speed)
