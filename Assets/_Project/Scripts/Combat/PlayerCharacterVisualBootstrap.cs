@@ -3,138 +3,106 @@ using UnityEngine;
 
 public static class PlayerCharacterVisualBootstrap
 {
-    private const string ResourcePath = "Characters/PlayerCuteKnight";
-    private const string ReplacementName = "Cute Player Visual";
+    private const string ResourcePath = "Characters/OriginalCharacterSet";
 
-    public static bool TryReplace(
-        GameObject player,
-        out Animator replacementAnimator,
-        out Transform replacementRoot)
+    public static bool TryReplace(GameObject character, out Animator animator, out Transform visualRoot)
     {
-        replacementAnimator = null;
-        replacementRoot = null;
-        if (player == null)
-            return false;
+        animator = null;
+        visualRoot = null;
+        if (character == null) return false;
 
-        Transform existingReplacement = FindDescendant(player.transform, ReplacementName);
-        if (existingReplacement != null)
+        bool isPlayer = character.GetComponent<PlayerCombat>() != null;
+        string replacementName = isPlayer ? "Original Knight Visual" : "KayKit Boss Visual";
+        Transform existing = FindDescendant(character.transform, replacementName);
+        if (existing != null)
         {
-            replacementAnimator = existingReplacement.GetComponentInChildren<Animator>(true);
-            replacementRoot = existingReplacement;
-            return replacementAnimator != null;
+            animator = existing.GetComponentInChildren<Animator>(true);
+            visualRoot = existing;
+            return true;
         }
 
-        PlayerCharacterVisualConfig config =
-            Resources.Load<PlayerCharacterVisualConfig>(ResourcePath);
-        if (config == null || config.characterPrefab == null)
-            return false;
+        PlayerCharacterVisualConfig config = Resources.Load<PlayerCharacterVisualConfig>(ResourcePath);
+        GameObject prefab = isPlayer ? config?.playerPrefab : config?.bossPrefab;
+        if (prefab == null) return false;
 
-        Animator oldAnimator = player.GetComponentInChildren<Animator>(true);
-        Transform oldVisualRoot = oldAnimator != null ? oldAnimator.transform : null;
-        Transform rightEquipment = FindDescendant(player.transform, "Right Equipment Pivot");
-        Transform leftEquipment = FindDescendant(player.transform, "Left Equipment Pivot");
+        Animator oldAnimator = character.GetComponentInChildren<Animator>(true);
+        Transform oldVisual = oldAnimator != null ? oldAnimator.transform : null;
+        Transform rightEquipment = FindDescendant(character.transform, "Right Equipment Pivot");
+        Transform leftEquipment = FindDescendant(character.transform, "Left Equipment Pivot");
+        float targetHeight = GetVisualHeight(oldVisual);
 
-        GameObject replacement = UnityEngine.Object.Instantiate(
-            config.characterPrefab,
-            player.transform);
-        replacement.name = ReplacementName;
-        replacement.transform.localPosition = Vector3.zero;
-        replacement.transform.localRotation = Quaternion.identity;
+        GameObject replacement = UnityEngine.Object.Instantiate(prefab, character.transform);
+        replacement.name = replacementName;
+        replacement.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
         replacement.transform.localScale = Vector3.one;
+        FitToHeightAndGround(replacement, character.transform, targetHeight);
 
-        FitToHeightAndGround(replacement, player.transform, config.targetHeight);
-        replacementAnimator = replacement.GetComponentInChildren<Animator>(true);
-        if (replacementAnimator == null || !replacementAnimator.isHuman)
-        {
-            Debug.LogWarning("Cute player character does not have a valid Humanoid Animator.");
-            UnityEngine.Object.Destroy(replacement);
-            replacementAnimator = null;
-            return false;
-        }
-
-        ReparentEquipment(rightEquipment, replacementAnimator, HumanBodyBones.RightHand);
-        ReparentEquipment(leftEquipment, replacementAnimator, HumanBodyBones.LeftHand);
-        FitEquipmentToLength(FindDescendant(player.transform, "Player Greatsword"), 1.65f);
+        animator = replacement.GetComponentInChildren<Animator>(true);
+        ReparentEquipment(rightEquipment, FindHand(animator, replacement.transform, true));
+        ReparentEquipment(leftEquipment, FindHand(animator, replacement.transform, false));
 
         foreach (Collider childCollider in replacement.GetComponentsInChildren<Collider>(true))
             UnityEngine.Object.Destroy(childCollider);
 
-        if (oldVisualRoot != null && oldVisualRoot != replacement.transform)
-            oldVisualRoot.gameObject.SetActive(false);
+        if (oldVisual != null && !oldVisual.IsChildOf(replacement.transform))
+            oldVisual.gameObject.SetActive(false);
 
-        replacementAnimator.applyRootMotion = false;
-        replacementRoot = replacement.transform;
+        if (animator != null) animator.applyRootMotion = false;
+        visualRoot = replacement.transform;
         return true;
     }
 
-    private static void ReparentEquipment(
-        Transform equipment,
-        Animator animator,
-        HumanBodyBones handBone)
+    private static Transform FindHand(Animator animator, Transform root, bool right)
     {
-        if (equipment == null || animator == null)
-            return;
+        if (animator != null && animator.isHuman)
+        {
+            Transform hand = animator.GetBoneTransform(right ? HumanBodyBones.RightHand : HumanBodyBones.LeftHand);
+            if (hand != null) return hand;
+        }
 
-        Transform hand = animator.GetBoneTransform(handBone);
-        if (hand == null)
-            return;
+        string wanted = right ? "hand.r" : "hand.l";
+        foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+            if (string.Equals(child.name, wanted, StringComparison.OrdinalIgnoreCase)) return child;
+        return root;
+    }
 
+    private static void ReparentEquipment(Transform equipment, Transform hand)
+    {
+        if (equipment == null || hand == null) return;
         equipment.SetParent(hand, false);
         equipment.localPosition = Vector3.zero;
         equipment.localRotation = Quaternion.identity;
         equipment.localScale = Vector3.one;
     }
 
-    private static void FitToHeightAndGround(
-        GameObject visual,
-        Transform player,
-        float targetHeight)
+    private static float GetVisualHeight(Transform visual)
+    {
+        if (visual == null) return 1.84f;
+        Renderer[] renderers = visual.GetComponentsInChildren<Renderer>(true);
+        return renderers.Length == 0 ? 1.84f : Mathf.Clamp(CalculateBounds(renderers).size.y, 1.4f, 2.2f);
+    }
+
+    private static void FitToHeightAndGround(GameObject visual, Transform character, float targetHeight)
     {
         Renderer[] renderers = visual.GetComponentsInChildren<Renderer>(true);
-        if (renderers.Length == 0)
-            return;
-
+        if (renderers.Length == 0) return;
         Bounds bounds = CalculateBounds(renderers);
-        float scale = Mathf.Max(0.01f, targetHeight) / Mathf.Max(0.001f, bounds.size.y);
-        visual.transform.localScale = Vector3.one * scale;
-
+        visual.transform.localScale = Vector3.one * (targetHeight / Mathf.Max(0.001f, bounds.size.y));
         bounds = CalculateBounds(renderers);
-        visual.transform.position += Vector3.up * (player.position.y - bounds.min.y);
+        visual.transform.position += Vector3.up * (character.position.y - bounds.min.y);
     }
 
     private static Bounds CalculateBounds(Renderer[] renderers)
     {
         Bounds bounds = renderers[0].bounds;
-        for (int i = 1; i < renderers.Length; i++)
-            bounds.Encapsulate(renderers[i].bounds);
+        for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
         return bounds;
-    }
-
-    private static void FitEquipmentToLength(Transform equipment, float targetLength)
-    {
-        if (equipment == null || !equipment.gameObject.activeInHierarchy)
-            return;
-
-        Renderer[] renderers = equipment.GetComponentsInChildren<Renderer>(true);
-        if (renderers.Length == 0)
-            return;
-
-        Bounds bounds = CalculateBounds(renderers);
-        float currentLength = Mathf.Max(bounds.size.x, bounds.size.y, bounds.size.z);
-        if (currentLength <= 0.001f)
-            return;
-
-        equipment.localScale *= targetLength / currentLength;
     }
 
     private static Transform FindDescendant(Transform root, string name)
     {
-        Transform[] descendants = root.GetComponentsInChildren<Transform>(true);
-        foreach (Transform descendant in descendants)
-        {
-            if (string.Equals(descendant.name, name, StringComparison.OrdinalIgnoreCase))
-                return descendant;
-        }
+        foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+            if (string.Equals(child.name, name, StringComparison.OrdinalIgnoreCase)) return child;
         return null;
     }
 }

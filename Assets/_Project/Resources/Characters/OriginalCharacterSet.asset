@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6e6e2a3202314b608628ca4536e84acd, type: 3}
-  m_Name: PlayerCuteKnight
+  m_Name: OriginalCharacterSet
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCharacterVisualConfig
-  characterPrefab: {fileID: 100100000, guid: 4c6cb531f7843c84c857ea21a497675a, type: 3}
-  targetHeight: 1.84
+  playerPrefab: {fileID: 100100000, guid: 4c6cb531f7843c84c857ea21a497675a, type: 3}
+  bossPrefab: {fileID: 100100000, guid: d2f7157053b4e69429bc227205a97964, type: 3}
