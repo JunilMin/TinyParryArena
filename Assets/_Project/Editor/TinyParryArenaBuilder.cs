@@ -2,6 +2,8 @@ using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 
 public static class TinyParryArenaBuilder
@@ -11,6 +13,7 @@ public static class TinyParryArenaBuilder
     private const string KayRoot = "Assets/ThirdParty/KayKit";
     private const string KenneyArenaRoot = "Assets/ThirdParty/KenneyMiniArena/Models/FBX format";
     private const string MaterialRoot = "Assets/_Project/Art/Materials";
+    private const string ProfileRoot = "Assets/_Project/Art/Profiles";
     private const string FreeGolemPath = "Assets/ThirdParty/Golem_Free/FBX/Characters/Rock_Golem.fbx";
     private const float CourtyardFloorSize = 96f;
     private const float CourtyardWallOffset = 44f;
@@ -23,6 +26,7 @@ public static class TinyParryArenaBuilder
     {
         EnsureFolder("Assets/_Project/Scenes");
         EnsureFolder(MaterialRoot);
+        EnsureFolder(ProfileRoot);
 
         Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -147,8 +151,12 @@ public static class TinyParryArenaBuilder
         Camera camera = cameraObject.AddComponent<Camera>();
         camera.fieldOfView = 58f;
         camera.nearClipPlane = 0.1f;
+        camera.allowHDR = true;
         cameraObject.AddComponent<AudioListener>();
         cameraObject.AddComponent<ThirdPersonCameraController>().SetTarget(player.transform);
+        ConfigureCameraRendering(cameraObject, camera);
+        CreateGlobalPostProcessing(systems.transform);
+        ConfigureRenderEnvironment();
 
         GameObject managerObject = new GameObject("Stage Manager");
         managerObject.transform.SetParent(systems.transform, false);
@@ -506,7 +514,7 @@ public static class TinyParryArenaBuilder
         foreach (Vector3 pos in towers)
             CreatePrimitive(root.transform, PrimitiveType.Cylinder, "Watch Tower", pos, new Vector3(1.3f, 3.2f, 1.3f), stone);
 
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "Castle Gate", new Vector3(0f, 2.5f, CourtyardWallOffset), new Vector3(6.0f, 5.0f, 0.6f), GetOrCreateMaterial("GateWood", new Color(0.12f, 0.07f, 0.04f)));
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "Castle Gate", new Vector3(0f, 2.5f, CourtyardWallOffset), new Vector3(6.0f, 5.0f, 0.6f), GetOrCreateMaterial("GateWood", new Color(0.12f, 0.07f, 0.04f), 0f, 0.12f));
         for (int i = -2; i <= 2; i += 2)
             CreatePrimitive(root.transform, PrimitiveType.Cube, "Blue Banner", new Vector3(i * 4.0f, 4.2f, CourtyardWallOffset - 0.5f), new Vector3(1.0f, 1.8f, 0.10f), blue);
 
@@ -515,6 +523,7 @@ public static class TinyParryArenaBuilder
         CreateTorch(root.transform, new Vector3(-36f, 1.4f, -42.5f));
         CreateTorch(root.transform, new Vector3(36f, 1.4f, -42.5f));
         CreateCourtyardArchitecture(root.transform);
+        CreateReflectionProbe(root.transform, new Vector3(0f, 4.5f, 0f), new Vector3(82f, 13f, 82f));
         CreateDirectionalLight(root.transform, new Color(0.42f, 0.55f, 0.85f), 0.75f, new Vector3(55f, 30f, 0f));
         return root;
     }
@@ -525,7 +534,7 @@ public static class TinyParryArenaBuilder
         Material floor = GetOrCreateMaterial("HallFloor", new Color(0.08f, 0.07f, 0.065f));
         Material stone = GetOrCreateMaterial("HallStone", new Color(0.19f, 0.17f, 0.15f));
         Material carpet = GetOrCreateMaterial("RoyalCarpet", new Color(0.38f, 0.025f, 0.025f));
-        Material gold = GetOrCreateMaterial("RoyalGold", new Color(0.58f, 0.38f, 0.08f));
+        Material gold = GetOrCreateMaterial("RoyalGold", new Color(0.58f, 0.38f, 0.08f), 0.82f, 0.56f);
 
         CreatePrimitive(root.transform, PrimitiveType.Cube, "Hall Floor", new Vector3(0f, -0.5f, 0f), new Vector3(HallWidth, 1f, HallLength), floor);
         CreatePrimitive(root.transform, PrimitiveType.Cube, "Back Wall", new Vector3(0f, 4.0f, 32f), new Vector3(HallWidth, 9f, 1f), stone);
@@ -550,6 +559,7 @@ public static class TinyParryArenaBuilder
         }
 
         CreateThroneHallArchitecture(root.transform);
+        CreateReflectionProbe(root.transform, new Vector3(0f, 4.2f, 0f), new Vector3(44f, 14f, 60f));
         CreateDirectionalLight(root.transform, new Color(1f, 0.42f, 0.22f), 0.9f, new Vector3(45f, -20f, 0f));
         return root;
     }
@@ -558,7 +568,7 @@ public static class TinyParryArenaBuilder
     {
         const float facadeOffset = 43.45f;
         const float wallHeight = 5.6f;
-        Material roof = GetOrCreateMaterial("RampartRoof", new Color(0.075f, 0.085f, 0.10f));
+        Material roof = GetOrCreateMaterial("RampartRoof", new Color(0.075f, 0.085f, 0.10f), 0.15f, 0.28f);
 
         CreatePrimitive(parent, PrimitiveType.Cube, "North Covered Rampart", new Vector3(0f, 5.9f, 40.5f), new Vector3(88f, 0.8f, 7f), roof);
         CreatePrimitive(parent, PrimitiveType.Cube, "South Covered Rampart", new Vector3(0f, 5.9f, -40.5f), new Vector3(88f, 0.8f, 7f), roof);
@@ -616,7 +626,7 @@ public static class TinyParryArenaBuilder
         const float backWallOffset = 31.45f;
         const float wallHeight = 8.8f;
         Material ceiling = GetOrCreateMaterial("HallCeilingStone", new Color(0.09f, 0.085f, 0.08f));
-        Material beam = GetOrCreateMaterial("HallRoofBeam", new Color(0.095f, 0.055f, 0.03f));
+        Material beam = GetOrCreateMaterial("HallRoofBeam", new Color(0.095f, 0.055f, 0.03f), 0f, 0.12f);
 
         CreatePrimitive(parent, PrimitiveType.Cube, "Stone Hall Ceiling", new Vector3(0f, 8.7f, 0f), new Vector3(HallWidth, 1.2f, HallLength), ceiling);
         for (int z = -28; z <= 28; z += 8)
@@ -669,7 +679,7 @@ public static class TinyParryArenaBuilder
 
     private static void CreateTorch(Transform parent, Vector3 position)
     {
-        Material metal = GetOrCreateMaterial("TorchMetal", new Color(0.08f, 0.07f, 0.06f));
+        Material metal = GetOrCreateMaterial("TorchMetal", new Color(0.08f, 0.07f, 0.06f), 0.78f, 0.34f);
         CreatePrimitive(parent, PrimitiveType.Cylinder, "Torch Stand", position - Vector3.up * 0.55f, new Vector3(0.10f, 0.65f, 0.10f), metal);
         GameObject lightObject = new GameObject("Torch Light");
         lightObject.transform.SetParent(parent, false);
@@ -684,7 +694,7 @@ public static class TinyParryArenaBuilder
 
     private static void CreateHangingBrazier(Transform parent, Vector3 position)
     {
-        Material metal = GetOrCreateMaterial("BrazierMetal", new Color(0.055f, 0.05f, 0.045f));
+        Material metal = GetOrCreateMaterial("BrazierMetal", new Color(0.055f, 0.05f, 0.045f), 0.82f, 0.31f);
         CreatePrimitive(parent, PrimitiveType.Cylinder, "Brazier Chain", position + Vector3.up * 1.2f, new Vector3(0.035f, 1.2f, 0.035f), metal);
         CreatePrimitive(parent, PrimitiveType.Sphere, "Hanging Brazier", position, new Vector3(0.55f, 0.18f, 0.55f), metal);
 
@@ -709,6 +719,106 @@ public static class TinyParryArenaBuilder
         light.color = color;
         light.intensity = intensity;
         light.shadows = LightShadows.Soft;
+        light.shadowStrength = 0.72f;
+    }
+
+    private static void CreateReflectionProbe(Transform parent, Vector3 position, Vector3 size)
+    {
+        GameObject probeObject = new GameObject("Stage Reflection Probe");
+        probeObject.transform.SetParent(parent, false);
+        probeObject.transform.localPosition = position;
+        ReflectionProbe probe = probeObject.AddComponent<ReflectionProbe>();
+        probe.mode = ReflectionProbeMode.Realtime;
+        probe.refreshMode = ReflectionProbeRefreshMode.OnAwake;
+        probe.timeSlicingMode = ReflectionProbeTimeSlicingMode.AllFacesAtOnce;
+        probe.resolution = 128;
+        probe.size = size;
+        probe.boxProjection = true;
+        probe.intensity = 0.72f;
+        probe.hdr = true;
+        probe.clearFlags = ReflectionProbeClearFlags.Skybox;
+    }
+
+    private static void ConfigureCameraRendering(GameObject cameraObject, Camera camera)
+    {
+        UniversalAdditionalCameraData cameraData = cameraObject.AddComponent<UniversalAdditionalCameraData>();
+        cameraData.renderPostProcessing = true;
+        cameraData.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+        cameraData.antialiasingQuality = AntialiasingQuality.High;
+        camera.allowMSAA = false;
+    }
+
+    private static void ConfigureRenderEnvironment()
+    {
+        RenderSettings.fog = true;
+        RenderSettings.fogMode = FogMode.ExponentialSquared;
+        RenderSettings.fogColor = new Color(0.035f, 0.045f, 0.065f);
+        RenderSettings.fogDensity = 0.008f;
+        RenderSettings.ambientMode = AmbientMode.Trilight;
+        RenderSettings.ambientSkyColor = new Color(0.12f, 0.15f, 0.21f);
+        RenderSettings.ambientEquatorColor = new Color(0.07f, 0.065f, 0.075f);
+        RenderSettings.ambientGroundColor = new Color(0.025f, 0.022f, 0.02f);
+        RenderSettings.ambientIntensity = 0.78f;
+        RenderSettings.reflectionIntensity = 0.72f;
+        RenderSettings.subtractiveShadowColor = new Color(0.045f, 0.05f, 0.065f);
+    }
+
+    private static void CreateGlobalPostProcessing(Transform parent)
+    {
+        const string profilePath = ProfileRoot + "/DarkCastleVolume.asset";
+        VolumeProfile profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(profilePath);
+        if (profile == null)
+        {
+            profile = ScriptableObject.CreateInstance<VolumeProfile>();
+            profile.name = "Dark Castle Volume";
+            AssetDatabase.CreateAsset(profile, profilePath);
+        }
+
+        profile.components.RemoveAll(component => component == null);
+
+        Tonemapping tonemapping = GetOrAddVolumeComponent<Tonemapping>(profile);
+        tonemapping.mode.Override(TonemappingMode.ACES);
+
+        ColorAdjustments color = GetOrAddVolumeComponent<ColorAdjustments>(profile);
+        color.postExposure.Override(-0.12f);
+        color.contrast.Override(17f);
+        color.colorFilter.Override(new Color(0.94f, 0.96f, 1f));
+        color.saturation.Override(-9f);
+
+        WhiteBalance whiteBalance = GetOrAddVolumeComponent<WhiteBalance>(profile);
+        whiteBalance.temperature.Override(-7f);
+        whiteBalance.tint.Override(-2f);
+
+        Bloom bloom = GetOrAddVolumeComponent<Bloom>(profile);
+        bloom.threshold.Override(1.15f);
+        bloom.intensity.Override(0.22f);
+        bloom.scatter.Override(0.55f);
+
+        Vignette vignette = GetOrAddVolumeComponent<Vignette>(profile);
+        vignette.intensity.Override(0.2f);
+        vignette.smoothness.Override(0.42f);
+
+        EditorUtility.SetDirty(profile);
+        AssetDatabase.SaveAssets();
+
+        GameObject volumeObject = new GameObject("Dark Castle Post Processing");
+        volumeObject.transform.SetParent(parent, false);
+        Volume volume = volumeObject.AddComponent<Volume>();
+        volume.isGlobal = true;
+        volume.priority = 10f;
+        volume.sharedProfile = profile;
+    }
+
+    private static T GetOrAddVolumeComponent<T>(VolumeProfile profile) where T : VolumeComponent
+    {
+        if (profile.TryGet(out T component))
+            return component;
+
+        component = profile.Add<T>(true);
+        component.name = typeof(T).Name;
+        AssetDatabase.AddObjectToAsset(component, profile);
+        EditorUtility.SetDirty(component);
+        return component;
     }
 
     private static GameObject CreatePrimitive(Transform parent, PrimitiveType type, string name, Vector3 position, Vector3 scale, Material material)
@@ -765,11 +875,16 @@ public static class TinyParryArenaBuilder
         return instance;
     }
 
-    private static Material GetOrCreateMaterial(string name, Color color)
+    private static Material GetOrCreateMaterial(string name, Color color, float metallic = 0f, float smoothness = 0.2f)
     {
         string path = MaterialRoot + "/" + name + ".mat";
         Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
-        if (existing != null) return existing;
+        if (existing != null)
+        {
+            ApplyMaterialProperties(existing, color, metallic, smoothness);
+            EditorUtility.SetDirty(existing);
+            return existing;
+        }
 
         Shader shader = Shader.Find("Universal Render Pipeline/Lit");
         if (shader == null) shader = Shader.Find("Universal Render Pipeline/Simple Lit");
@@ -790,11 +905,20 @@ public static class TinyParryArenaBuilder
         }
 
         material.name = name;
-        if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
-        if (material.HasProperty("_Color")) material.SetColor("_Color", color);
-        material.color = color;
+        ApplyMaterialProperties(material, color, metallic, smoothness);
         AssetDatabase.CreateAsset(material, path);
         return material;
+    }
+
+    private static void ApplyMaterialProperties(Material material, Color color, float metallic, float smoothness)
+    {
+        if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
+        if (material.HasProperty("_Color")) material.SetColor("_Color", color);
+        if (material.HasProperty("_Metallic")) material.SetFloat("_Metallic", Mathf.Clamp01(metallic));
+        if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", Mathf.Clamp01(smoothness));
+        if (material.HasProperty("_Glossiness")) material.SetFloat("_Glossiness", Mathf.Clamp01(smoothness));
+        material.color = color;
+        material.enableInstancing = true;
     }
 
     private static GameObject InstantiateCharacter(string path, Transform parent, string name, float scale)
