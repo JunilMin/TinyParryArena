@@ -16,9 +16,16 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
     [SerializeField] private float lockOnTargetHeight = 1.55f;
     [SerializeField] private float smoothTime = 0.05f;
 
+    [Header("Collision")]
+    [SerializeField, Min(0.05f)] private float collisionRadius = 0.35f;
+    [SerializeField, Min(0f)] private float collisionBuffer = 0.2f;
+    [SerializeField, Min(0.05f)] private float minimumDistance = 0.15f;
+    [SerializeField] private LayerMask collisionLayers = ~0;
+
     private float yaw;
     private float pitch = 22f;
     private Vector3 velocity;
+    private readonly RaycastHit[] collisionHits = new RaycastHit[12];
 
     public void SetTarget(Transform value)
     {
@@ -62,7 +69,9 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
             activeDistance += Mathf.Clamp((separation - 2.5f) * 0.28f, 0f, 2.2f);
         }
 
-        Vector3 desired = pivot - orbitRotation * Vector3.forward * activeDistance;
+        Vector3 cameraDirection = -(orbitRotation * Vector3.forward);
+        float collisionDistance = GetCollisionDistance(pivot, cameraDirection, activeDistance);
+        Vector3 desired = pivot + cameraDirection * collisionDistance;
         transform.position = Vector3.SmoothDamp(transform.position, desired, ref velocity, smoothTime);
 
         if (lockOn != null && lockOn.IsLockedOn)
@@ -78,6 +87,30 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
         {
             transform.rotation = orbitRotation;
         }
+    }
+
+    private float GetCollisionDistance(Vector3 pivot, Vector3 direction, float desiredDistance)
+    {
+        int hitCount = Physics.SphereCastNonAlloc(
+            pivot,
+            collisionRadius,
+            direction,
+            collisionHits,
+            desiredDistance,
+            collisionLayers,
+            QueryTriggerInteraction.Ignore);
+
+        float nearestDistance = desiredDistance;
+        for (int i = 0; i < hitCount; i++)
+        {
+            Transform hitTransform = collisionHits[i].transform;
+            if (hitTransform == null || hitTransform == target || hitTransform.IsChildOf(target))
+                continue;
+
+            nearestDistance = Mathf.Min(nearestDistance, collisionHits[i].distance - collisionBuffer);
+        }
+
+        return Mathf.Clamp(nearestDistance, minimumDistance, desiredDistance);
     }
 
     private static Vector2 ReadLookInput()
