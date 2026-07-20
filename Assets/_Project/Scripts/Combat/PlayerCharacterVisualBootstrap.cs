@@ -29,6 +29,8 @@ public static class PlayerCharacterVisualBootstrap
         Transform oldVisual = oldAnimator != null ? oldAnimator.transform : null;
         Transform rightEquipment = FindDescendant(character.transform, "Right Equipment Pivot");
         Transform leftEquipment = FindDescendant(character.transform, "Left Equipment Pivot");
+        if (rightEquipment == null) rightEquipment = FindDescendantEndingWith(character.transform, " Weapon");
+        if (leftEquipment == null) leftEquipment = FindDescendantEndingWith(character.transform, " Shield");
         float targetHeight = GetVisualHeight(oldVisual);
 
         GameObject replacement = UnityEngine.Object.Instantiate(prefab, character.transform);
@@ -107,6 +109,13 @@ public static class PlayerCharacterVisualBootstrap
     {
         foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
             if (string.Equals(child.name, name, StringComparison.OrdinalIgnoreCase)) return child;
+        return null;
+    }
+
+    private static Transform FindDescendantEndingWith(Transform root, string suffix)
+    {
+        foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+            if (child.name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)) return child;
         return null;
     }
 }
