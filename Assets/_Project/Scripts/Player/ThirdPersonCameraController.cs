@@ -10,11 +10,14 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
     [SerializeField] private float distance = 10.6f;
     [SerializeField] private float height = 2.45f;
     [SerializeField] private float sensitivity = 0.16f;
+    [SerializeField, Range(0.1f, 1f)] private float freeLookSensitivityMultiplier = 0.8f;
     [SerializeField] private float minPitch = -10f;
     [SerializeField] private float maxPitch = 55f;
     [SerializeField] private float lockOnPitch = 17f;
     [SerializeField] private float lockOnTargetHeight = 1.55f;
     [SerializeField] private float smoothTime = 0.05f;
+    [SerializeField, Min(0.01f)] private float freeLookRotationSmoothTime = 0.08f;
+    [SerializeField, Min(0.01f)] private float lockOnRotationSmoothTime = 0.04f;
 
     [Header("Collision")]
     [SerializeField, Min(0.05f)] private float collisionRadius = 0.35f;
@@ -24,6 +27,10 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
 
     private float yaw;
     private float pitch = 22f;
+    private float desiredYaw;
+    private float desiredPitch = 22f;
+    private float yawVelocity;
+    private float pitchVelocity;
     private Vector3 velocity;
     private readonly RaycastHit[] collisionHits = new RaycastHit[12];
 
@@ -35,6 +42,8 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
 
     private void Start()
     {
+        yaw = desiredYaw = transform.eulerAngles.y;
+        pitch = desiredPitch;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -49,15 +58,21 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
             Vector3 targetDirection = lockOn.CurrentTarget.position - target.position;
             targetDirection.y = 0f;
             if (targetDirection.sqrMagnitude > 0.001f)
-                yaw = Quaternion.LookRotation(targetDirection.normalized).eulerAngles.y;
-            pitch = lockOnPitch;
+                desiredYaw = Quaternion.LookRotation(targetDirection.normalized).eulerAngles.y;
+            desiredPitch = lockOnPitch;
         }
         else
         {
-            Vector2 look = ReadLookInput();
-            yaw += look.x * sensitivity;
-            pitch = Mathf.Clamp(pitch - look.y * sensitivity, minPitch, maxPitch);
+            Vector2 look = ReadLookInput() * freeLookSensitivityMultiplier;
+            desiredYaw += look.x * sensitivity;
+            desiredPitch = Mathf.Clamp(desiredPitch - look.y * sensitivity, minPitch, maxPitch);
         }
+
+        float rotationSmoothTime = lockOn != null && lockOn.IsLockedOn
+            ? lockOnRotationSmoothTime
+            : freeLookRotationSmoothTime;
+        yaw = Mathf.SmoothDampAngle(yaw, desiredYaw, ref yawVelocity, rotationSmoothTime);
+        pitch = Mathf.SmoothDamp(pitch, desiredPitch, ref pitchVelocity, rotationSmoothTime);
 
         Quaternion orbitRotation = Quaternion.Euler(pitch, yaw, 0f);
         Vector3 pivot = target.position + Vector3.up * height;
