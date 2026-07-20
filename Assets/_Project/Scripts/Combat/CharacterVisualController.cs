@@ -38,6 +38,12 @@ public sealed class CharacterVisualController : MonoBehaviour
 
     private void Awake()
     {
+        if (PlayerCharacterVisualBootstrap.TryReplace(gameObject, out Animator replacementAnimator, out Transform replacementRoot))
+        {
+            animator = replacementAnimator;
+            visualRoot = replacementRoot;
+        }
+
         if (animator == null) animator = GetComponentInChildren<Animator>();
         if (visualRoot == null && animator != null) visualRoot = animator.transform;
         if (visualRoot == null) visualRoot = transform;
