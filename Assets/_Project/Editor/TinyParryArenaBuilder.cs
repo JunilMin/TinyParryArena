@@ -531,6 +531,9 @@ public static class TinyParryArenaBuilder
         CreatePrimitive(root.transform, PrimitiveType.Cube, "Back Wall", new Vector3(0f, 4.0f, 32f), new Vector3(HallWidth, 9f, 1f), stone);
         CreatePrimitive(root.transform, PrimitiveType.Cube, "Left Wall", new Vector3(-24f, 4.0f, 0f), new Vector3(1f, 9f, HallLength), stone);
         CreatePrimitive(root.transform, PrimitiveType.Cube, "Right Wall", new Vector3(24f, 4.0f, 0f), new Vector3(1f, 9f, HallLength), stone);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "Front Left Wall", new Vector3(-14f, 4.0f, -32f), new Vector3(20f, 9f, 1f), stone);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "Front Right Wall", new Vector3(14f, 4.0f, -32f), new Vector3(20f, 9f, 1f), stone);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "Front Gate Lintel", new Vector3(0f, 7.0f, -32f), new Vector3(8f, 3f, 1f), stone);
         CreatePrimitive(root.transform, PrimitiveType.Cube, "Red Carpet", new Vector3(0f, 0.03f, 1f), new Vector3(4.0f, 0.08f, 59f), carpet);
         CreatePrimitive(root.transform, PrimitiveType.Cube, "Throne Dais", new Vector3(0f, 0.4f, 29.0f), new Vector3(5.0f, 0.8f, 3.2f), stone);
         CreatePrimitive(root.transform, PrimitiveType.Cube, "Throne Seat", new Vector3(0f, 1.35f, 29.6f), new Vector3(1.5f, 1.8f, 1.2f), gold);
@@ -555,6 +558,13 @@ public static class TinyParryArenaBuilder
     {
         const float facadeOffset = 43.45f;
         const float wallHeight = 5.6f;
+        Material roof = GetOrCreateMaterial("RampartRoof", new Color(0.075f, 0.085f, 0.10f));
+
+        CreatePrimitive(parent, PrimitiveType.Cube, "North Covered Rampart", new Vector3(0f, 5.9f, 40.5f), new Vector3(88f, 0.8f, 7f), roof);
+        CreatePrimitive(parent, PrimitiveType.Cube, "South Covered Rampart", new Vector3(0f, 5.9f, -40.5f), new Vector3(88f, 0.8f, 7f), roof);
+        CreatePrimitive(parent, PrimitiveType.Cube, "East Covered Rampart", new Vector3(40.5f, 5.9f, 0f), new Vector3(7f, 0.8f, 74f), roof);
+        CreatePrimitive(parent, PrimitiveType.Cube, "West Covered Rampart", new Vector3(-40.5f, 5.9f, 0f), new Vector3(7f, 0.8f, 74f), roof);
+        CreatePrimitive(parent, PrimitiveType.Cube, "Gatehouse Roof", new Vector3(0f, 8.2f, 40.5f), new Vector3(20f, 1.0f, 8.5f), roof);
 
         for (int offset = -39; offset <= 39; offset += 6)
         {
@@ -595,6 +605,9 @@ public static class TinyParryArenaBuilder
             if (x != 0)
                 CreateEnvironmentModel("banner.fbx", parent, "Castle Banner", new Vector3(x, 2.0f, facadeOffset - 0.65f), Vector3.zero, 3.2f);
         }
+
+        for (int x = -8; x <= 8; x += 4)
+            CreateEnvironmentModel("border-straight.fbx", parent, "Gatehouse Battlement", new Vector3(x, 8.7f, 43.4f), Vector3.zero, 1.15f);
     }
 
     private static void CreateThroneHallArchitecture(Transform parent)
@@ -602,6 +615,14 @@ public static class TinyParryArenaBuilder
         const float sideWallOffset = 23.45f;
         const float backWallOffset = 31.45f;
         const float wallHeight = 8.8f;
+        Material ceiling = GetOrCreateMaterial("HallCeilingStone", new Color(0.09f, 0.085f, 0.08f));
+        Material beam = GetOrCreateMaterial("HallRoofBeam", new Color(0.095f, 0.055f, 0.03f));
+
+        CreatePrimitive(parent, PrimitiveType.Cube, "Stone Hall Ceiling", new Vector3(0f, 8.7f, 0f), new Vector3(HallWidth, 1.2f, HallLength), ceiling);
+        for (int z = -28; z <= 28; z += 8)
+            CreatePrimitive(parent, PrimitiveType.Cube, "Ceiling Cross Beam", new Vector3(0f, 7.95f, z), new Vector3(46f, 0.45f, 0.65f), beam);
+        for (int x = -15; x <= 15; x += 15)
+            CreatePrimitive(parent, PrimitiveType.Cube, "Ceiling Long Beam", new Vector3(x, 7.85f, 0f), new Vector3(0.55f, 0.55f, 62f), beam);
 
         for (int z = -27; z <= 27; z += 6)
         {
@@ -611,6 +632,13 @@ public static class TinyParryArenaBuilder
 
         for (int x = -21; x <= 21; x += 6)
             CreateEnvironmentModel("wall.fbx", parent, "Hall Back Modular Wall", new Vector3(x, 0f, backWallOffset), Vector3.zero, wallHeight);
+
+        for (int x = -21; x <= 21; x += 6)
+        {
+            if (Mathf.Abs(x) >= 6)
+                CreateEnvironmentModel("wall.fbx", parent, "Hall Front Modular Wall", new Vector3(x, 0f, -backWallOffset), new Vector3(0f, 180f, 0f), wallHeight);
+        }
+        CreateEnvironmentModel("wall-gate.fbx", parent, "Hall Entrance Gate", new Vector3(0f, 0f, -backWallOffset + 0.15f), new Vector3(0f, 180f, 0f), 8.6f);
 
         CreateEnvironmentModel("wall-corner.fbx", parent, "Hall Back Left Corner", new Vector3(-sideWallOffset, 0f, backWallOffset), Vector3.zero, wallHeight);
         CreateEnvironmentModel("wall-corner.fbx", parent, "Hall Back Right Corner", new Vector3(sideWallOffset, 0f, backWallOffset), new Vector3(0f, 90f, 0f), wallHeight);
@@ -627,6 +655,9 @@ public static class TinyParryArenaBuilder
         }
 
         CreateEnvironmentModel("trophy.fbx", parent, "Royal Trophy", new Vector3(0f, 0.8f, 29.1f), new Vector3(0f, 180f, 0f), 2.1f);
+
+        for (int z = -20; z <= 20; z += 10)
+            CreateHangingBrazier(parent, new Vector3(0f, 5.8f, z));
     }
 
     private static GameObject NewStageRoot(Transform parent, string name)
@@ -648,6 +679,23 @@ public static class TinyParryArenaBuilder
         light.color = new Color(1f, 0.37f, 0.08f);
         light.intensity = 5.0f;
         light.range = 6.5f;
+        light.shadows = LightShadows.Soft;
+    }
+
+    private static void CreateHangingBrazier(Transform parent, Vector3 position)
+    {
+        Material metal = GetOrCreateMaterial("BrazierMetal", new Color(0.055f, 0.05f, 0.045f));
+        CreatePrimitive(parent, PrimitiveType.Cylinder, "Brazier Chain", position + Vector3.up * 1.2f, new Vector3(0.035f, 1.2f, 0.035f), metal);
+        CreatePrimitive(parent, PrimitiveType.Sphere, "Hanging Brazier", position, new Vector3(0.55f, 0.18f, 0.55f), metal);
+
+        GameObject lightObject = new GameObject("Brazier Light");
+        lightObject.transform.SetParent(parent, false);
+        lightObject.transform.localPosition = position + Vector3.up * 0.25f;
+        Light light = lightObject.AddComponent<Light>();
+        light.type = LightType.Point;
+        light.color = new Color(1f, 0.32f, 0.07f);
+        light.intensity = 5.5f;
+        light.range = 10f;
         light.shadows = LightShadows.Soft;
     }
 
