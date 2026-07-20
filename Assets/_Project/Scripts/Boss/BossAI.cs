@@ -235,7 +235,7 @@ public sealed class BossAI : MonoBehaviour
                 yield return Strike(1, 14 + stageLevel * 2, 0.48f, 0.18f, attackRange + 0.65f, new Color(1f, 0.45f, 0f));
                 break;
             case 2: // thrust
-                yield return Strike(2, 22 + stageLevel * 2, 0.82f, 0.24f, attackRange + 1.0f, Color.magenta);
+                yield return Strike(2, 22 + stageLevel * 2, 0.82f, 0.24f, attackRange + 1.0f, new Color(1f, 0.12f, 0.02f));
                 break;
             case 3: // delayed overhead: stage 2+
                 yield return Strike(0, 22 + stageLevel * 2, 1.05f, 0.16f, attackRange + 0.45f, new Color(1f, 0.75f, 0.15f));
@@ -254,7 +254,7 @@ public sealed class BossAI : MonoBehaviour
                 yield return new WaitForSeconds(0.35f);
                 SetBodyColor(baseColor);
                 yield return new WaitForSeconds(0.22f);
-                yield return Strike(2, 27, 0.30f, 0.10f, attackRange + 1.15f, new Color(0.85f, 0.1f, 1f));
+                yield return Strike(2, 27, 0.30f, 0.10f, attackRange + 1.15f, new Color(1f, 0.55f, 0.05f));
                 break;
             case 6: // three-hit royal combo: stage 3
                 yield return Strike(1, 12, 0.38f, 0.12f, attackRange + 0.65f, Color.red);
@@ -266,7 +266,7 @@ public sealed class BossAI : MonoBehaviour
                 if (!lastStrikeParried && !selfHealth.IsDead)
                 {
                     yield return new WaitForSeconds(0.10f);
-                    yield return Strike(2, 24, 0.26f, 0.09f, attackRange + 1.0f, Color.magenta);
+                    yield return Strike(2, 24, 0.26f, 0.09f, attackRange + 1.0f, new Color(1f, 0.12f, 0.02f));
                 }
                 break;
             default: // royal parry stance: guaranteed in final-boss pattern cycle

@@ -13,11 +13,19 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
     [SerializeField, Range(0.1f, 1f)] private float freeLookSensitivityMultiplier = 0.8f;
     [SerializeField] private float minPitch = -10f;
     [SerializeField] private float maxPitch = 55f;
-    [SerializeField] private float lockOnPitch = 17f;
     [SerializeField] private float lockOnTargetHeight = 1.55f;
     [SerializeField] private float smoothTime = 0.05f;
     [SerializeField, Min(0.01f)] private float freeLookRotationSmoothTime = 0.08f;
     [SerializeField, Min(0.01f)] private float lockOnRotationSmoothTime = 0.04f;
+
+    [Header("Lock-On Framing")]
+    [SerializeField, Min(2f)] private float lockOnDistance = 7.4f;
+    [SerializeField, Min(0.5f)] private float lockOnPivotHeight = 1.7f;
+    [SerializeField, Range(-5f, 35f)] private float lockOnCameraPitch = 10.5f;
+    [SerializeField, Range(-3f, 3f)] private float lockOnShoulderOffset = 1.25f;
+    [SerializeField, Range(0.4f, 0.75f)] private float lockOnFocusBias = 0.58f;
+    [SerializeField, Min(0f)] private float lockOnDistancePerMeter = 0.22f;
+    [SerializeField, Min(0f)] private float lockOnMaxDistanceExtension = 1.6f;
 
     [Header("Collision")]
     [SerializeField, Min(0.05f)] private float collisionRadius = 0.35f;
@@ -53,13 +61,15 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
         if (target == null) return;
         if (lockOn == null) lockOn = target.GetComponent<PlayerLockOn>();
 
-        if (lockOn != null && lockOn.IsLockedOn)
+        bool isLockedOn = lockOn != null && lockOn.IsLockedOn;
+
+        if (isLockedOn)
         {
             Vector3 targetDirection = lockOn.CurrentTarget.position - target.position;
             targetDirection.y = 0f;
             if (targetDirection.sqrMagnitude > 0.001f)
                 desiredYaw = Quaternion.LookRotation(targetDirection.normalized).eulerAngles.y;
-            desiredPitch = lockOnPitch;
+            desiredPitch = lockOnCameraPitch;
         }
         else
         {
@@ -68,32 +78,42 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
             desiredPitch = Mathf.Clamp(desiredPitch - look.y * sensitivity, minPitch, maxPitch);
         }
 
-        float rotationSmoothTime = lockOn != null && lockOn.IsLockedOn
+        float rotationSmoothTime = isLockedOn
             ? lockOnRotationSmoothTime
             : freeLookRotationSmoothTime;
         yaw = Mathf.SmoothDampAngle(yaw, desiredYaw, ref yawVelocity, rotationSmoothTime);
         pitch = Mathf.SmoothDamp(pitch, desiredPitch, ref pitchVelocity, rotationSmoothTime);
 
         Quaternion orbitRotation = Quaternion.Euler(pitch, yaw, 0f);
-        Vector3 pivot = target.position + Vector3.up * height;
+        float activeHeight = isLockedOn ? lockOnPivotHeight : height;
+        Vector3 pivot = target.position + Vector3.up * activeHeight;
 
-        float activeDistance = distance;
-        if (lockOn != null && lockOn.IsLockedOn)
+        float activeDistance = isLockedOn ? lockOnDistance : distance;
+        if (isLockedOn)
         {
             float separation = Vector3.Distance(target.position, lockOn.CurrentTarget.position);
-            activeDistance += Mathf.Clamp((separation - 2.5f) * 0.28f, 0f, 2.2f);
+            activeDistance += Mathf.Clamp(
+                (separation - 3f) * lockOnDistancePerMeter,
+                0f,
+                lockOnMaxDistanceExtension);
         }
 
         Vector3 cameraDirection = -(orbitRotation * Vector3.forward);
-        float collisionDistance = GetCollisionDistance(pivot, cameraDirection, activeDistance);
-        Vector3 desired = pivot + cameraDirection * collisionDistance;
+        Vector3 desiredOffset = cameraDirection * activeDistance;
+        if (isLockedOn)
+            desiredOffset += orbitRotation * Vector3.right * lockOnShoulderOffset;
+
+        float desiredOffsetLength = desiredOffset.magnitude;
+        Vector3 collisionDirection = desiredOffset / desiredOffsetLength;
+        float collisionDistance = GetCollisionDistance(pivot, collisionDirection, desiredOffsetLength);
+        Vector3 desired = pivot + collisionDirection * collisionDistance;
         transform.position = Vector3.SmoothDamp(transform.position, desired, ref velocity, smoothTime);
 
-        if (lockOn != null && lockOn.IsLockedOn)
+        if (isLockedOn)
         {
             Vector3 playerFocus = target.position + Vector3.up * 1.05f;
             Vector3 enemyFocus = lockOn.CurrentTarget.position + Vector3.up * lockOnTargetHeight;
-            Vector3 focus = Vector3.Lerp(playerFocus, enemyFocus, 0.66f);
+            Vector3 focus = Vector3.Lerp(playerFocus, enemyFocus, lockOnFocusBias);
             Vector3 lookDirection = focus - transform.position;
             if (lookDirection.sqrMagnitude > 0.001f)
                 transform.rotation = Quaternion.LookRotation(lookDirection.normalized, Vector3.up);

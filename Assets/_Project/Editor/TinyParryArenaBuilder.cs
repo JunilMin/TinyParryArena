@@ -878,31 +878,20 @@ public static class TinyParryArenaBuilder
     private static Material GetOrCreateMaterial(string name, Color color, float metallic = 0f, float smoothness = 0.2f)
     {
         string path = MaterialRoot + "/" + name + ".mat";
+        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+        if (shader == null)
+            throw new System.InvalidOperationException("URP Lit shader is unavailable. Verify the Universal Render Pipeline package before rebuilding the arena.");
+
         Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
         if (existing != null)
         {
+            existing.shader = shader;
             ApplyMaterialProperties(existing, color, metallic, smoothness);
             EditorUtility.SetDirty(existing);
             return existing;
         }
 
-        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-        if (shader == null) shader = Shader.Find("Universal Render Pipeline/Simple Lit");
-        if (shader == null) shader = Shader.Find("Standard");
-        if (shader == null) shader = Shader.Find("Unlit/Color");
-
-        Material material;
-        if (shader != null)
-        {
-            material = new Material(shader);
-        }
-        else
-        {
-            Material builtIn = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Material.mat");
-            if (builtIn == null)
-                throw new System.InvalidOperationException("Unity default material and supported shaders could not be found.");
-            material = new Material(builtIn);
-        }
+        Material material = new Material(shader);
 
         material.name = name;
         ApplyMaterialProperties(material, color, metallic, smoothness);
