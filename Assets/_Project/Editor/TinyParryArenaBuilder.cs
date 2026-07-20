@@ -11,6 +11,11 @@ public static class TinyParryArenaBuilder
     private const string KayRoot = "Assets/ThirdParty/KayKit";
     private const string MaterialRoot = "Assets/_Project/Art/Materials";
     private const string FreeGolemPath = "Assets/ThirdParty/Golem_Free/FBX/Characters/Rock_Golem.fbx";
+    private const float CourtyardFloorSize = 96f;
+    private const float CourtyardWallOffset = 44f;
+    private const float CourtyardWallLength = 88f;
+    private const float HallWidth = 48f;
+    private const float HallLength = 64f;
 
     [MenuItem("Tiny Parry Arena/Build Game")]
     public static void BuildGame()
@@ -54,7 +59,7 @@ public static class TinyParryArenaBuilder
             KayRoot + "/Characters/fbx/Rogue.fbx",
             KayRoot + "/Weapons/sword_1handed.fbx",
             KayRoot + "/Weapons/shield_badge.fbx",
-            120, 1.22f, 2.85f, 1, new Vector3(0f, 0.05f, 7.0f));
+            120, 1.22f, 2.85f, 1, new Vector3(0f, 0.05f, 14.0f));
 
         stageRoots[1] = CreateCastleCourtyard(stagesRoot.transform);
         bosses[1] = CreateBoss(
@@ -62,7 +67,7 @@ public static class TinyParryArenaBuilder
             KayRoot + "/Characters/fbx/Knight.fbx",
             KayRoot + "/Weapons/sword_1handed.fbx",
             KayRoot + "/Weapons/shield_badge.fbx",
-            175, 1.36f, 3.05f, 2, new Vector3(0f, 0.05f, 7.5f));
+            175, 1.36f, 3.05f, 2, new Vector3(0f, 0.05f, 14.0f));
 
         stageRoots[2] = CreateThroneHall(stagesRoot.transform);
         bosses[2] = CreateBoss(
@@ -70,7 +75,7 @@ public static class TinyParryArenaBuilder
             KayRoot + "/Characters/fbx/Barbarian.fbx",
             KayRoot + "/Weapons/sword_2handed.fbx",
             KayRoot + "/Weapons/shield_round_barbarian.fbx",
-            260, 1.52f, 3.25f, 3, new Vector3(0f, 0.05f, 8.0f));
+            260, 1.52f, 3.25f, 3, new Vector3(0f, 0.05f, 16.0f));
 
         stageRoots[3] = CreateCastleCourtyard(stagesRoot.transform);
         stageRoots[3].name = "Stage 4 - Twinblade Pit";
@@ -79,7 +84,7 @@ public static class TinyParryArenaBuilder
             KayRoot + "/Characters/fbx/Rogue_Hooded.fbx",
             KayRoot + "/Weapons/sword_1handed.fbx",
             KayRoot + "/Weapons/sword_1handed.fbx",
-            230, 1.30f, 2.95f, 4, new Vector3(0f, 0.05f, 8.0f));
+            230, 1.30f, 2.95f, 4, new Vector3(0f, 0.05f, 14.5f));
 
         stageRoots[4] = CreateCastleCourtyard(stagesRoot.transform);
         stageRoots[4].name = "Stage 5 - Sentinel Courtyard";
@@ -88,7 +93,7 @@ public static class TinyParryArenaBuilder
             KayRoot + "/Characters/fbx/Ranger.fbx",
             KayRoot + "/Weapons/sword_2handed.fbx",
             "",
-            270, 1.42f, 3.85f, 5, new Vector3(0f, 0.05f, 8.5f));
+            270, 1.42f, 3.85f, 5, new Vector3(0f, 0.05f, 15.0f));
 
         stageRoots[5] = CreateThroneHall(stagesRoot.transform);
         stageRoots[5].name = "Stage 6 - Execution Ground";
@@ -97,7 +102,7 @@ public static class TinyParryArenaBuilder
             KayRoot + "/Characters/fbx/Barbarian.fbx",
             KayRoot + "/Weapons/sword_2handed.fbx",
             "",
-            325, 1.62f, 3.55f, 6, new Vector3(0f, 0.05f, 8.5f));
+            325, 1.62f, 3.55f, 6, new Vector3(0f, 0.05f, 16.0f));
 
         stageRoots[6] = CreateThroneHall(stagesRoot.transform);
         stageRoots[6].name = "Stage 7 - Royal Command Hall";
@@ -106,7 +111,7 @@ public static class TinyParryArenaBuilder
             KayRoot + "/Characters/fbx/Knight.fbx",
             KayRoot + "/Weapons/sword_1handed.fbx",
             KayRoot + "/Weapons/shield_badge.fbx",
-            390, 1.55f, 3.45f, 7, new Vector3(0f, 0.05f, 9.0f));
+            390, 1.55f, 3.45f, 7, new Vector3(0f, 0.05f, 16.0f));
 
         stageRoots[7] = CreateCastleCourtyard(stagesRoot.transform);
         stageRoots[7].name = "Stage 8 - Moonlit Garden";
@@ -115,7 +120,7 @@ public static class TinyParryArenaBuilder
             KayRoot + "/Characters/fbx/Rogue_Hooded.fbx",
             KayRoot + "/Weapons/sword_1handed.fbx",
             KayRoot + "/Weapons/sword_1handed.fbx",
-            470, 1.48f, 3.25f, 8, new Vector3(0f, 0.05f, 8.5f));
+            470, 1.48f, 3.25f, 8, new Vector3(0f, 0.05f, 15.0f));
 
         stageRoots[8] = CreateThroneHall(stagesRoot.transform);
         stageRoots[8].name = "Stage 9 - Royal Hall";
@@ -124,7 +129,7 @@ public static class TinyParryArenaBuilder
             KayRoot + "/Characters/fbx/Knight.fbx",
             KayRoot + "/Weapons/sword_2handed.fbx",
             "",
-            560, 1.64f, 3.70f, 9, new Vector3(0f, 0.05f, 9.0f));
+            560, 1.64f, 3.70f, 9, new Vector3(0f, 0.05f, 16.0f));
 
         stageRoots[9] = CreateThroneHall(stagesRoot.transform);
         stageRoots[9].name = "Stage 10 - Tower Entrance";
@@ -133,13 +138,14 @@ public static class TinyParryArenaBuilder
             KayRoot + "/Characters/fbx/Barbarian.fbx",
             KayRoot + "/Weapons/sword_2handed.fbx",
             KayRoot + "/Weapons/shield_round_barbarian.fbx",
-            680, 1.78f, 4.05f, 10, new Vector3(0f, 0.05f, 9.5f));
+            680, 1.78f, 4.05f, 10, new Vector3(0f, 0.05f, 16.5f));
 
         GameObject cameraObject = new GameObject("Main Camera");
         cameraObject.transform.SetParent(systems.transform, false);
         cameraObject.tag = "MainCamera";
         Camera camera = cameraObject.AddComponent<Camera>();
         camera.fieldOfView = 58f;
+        camera.nearClipPlane = 0.1f;
         cameraObject.AddComponent<AudioListener>();
         cameraObject.AddComponent<ThirdPersonCameraController>().SetTarget(player.transform);
 
@@ -171,7 +177,7 @@ public static class TinyParryArenaBuilder
     {
         GameObject root = new GameObject("Player");
         root.transform.SetParent(parent, false);
-        root.transform.localPosition = new Vector3(0f, 0.15f, -8.5f);
+        root.transform.localPosition = new Vector3(0f, 0.15f, -14f);
 
         CharacterController cc = root.AddComponent<CharacterController>();
         cc.center = new Vector3(0f, 1f, 0f);
@@ -485,28 +491,28 @@ public static class TinyParryArenaBuilder
         Material blue = GetOrCreateMaterial("BannerBlue", new Color(0.04f, 0.14f, 0.36f));
         Material floor = GetOrCreateMaterial("CourtyardFloor", new Color(0.10f, 0.12f, 0.15f));
 
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "Courtyard Floor", new Vector3(0f, -0.5f, 0f), new Vector3(48f, 1f, 48f), floor);
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "North Wall", new Vector3(0f, 2.4f, 22f), new Vector3(44f, 5.5f, 0.8f), stone);
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "South Wall", new Vector3(0f, 2.4f, -22f), new Vector3(44f, 5.5f, 0.8f), stone);
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "East Wall", new Vector3(22f, 2.4f, 0f), new Vector3(0.8f, 5.5f, 44f), stone);
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "West Wall", new Vector3(-22f, 2.4f, 0f), new Vector3(0.8f, 5.5f, 44f), stone);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "Courtyard Floor", new Vector3(0f, -0.5f, 0f), new Vector3(CourtyardFloorSize, 1f, CourtyardFloorSize), floor);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "North Wall", new Vector3(0f, 2.4f, CourtyardWallOffset), new Vector3(CourtyardWallLength, 5.5f, 0.8f), stone);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "South Wall", new Vector3(0f, 2.4f, -CourtyardWallOffset), new Vector3(CourtyardWallLength, 5.5f, 0.8f), stone);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "East Wall", new Vector3(CourtyardWallOffset, 2.4f, 0f), new Vector3(0.8f, 5.5f, CourtyardWallLength), stone);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "West Wall", new Vector3(-CourtyardWallOffset, 2.4f, 0f), new Vector3(0.8f, 5.5f, CourtyardWallLength), stone);
 
         Vector3[] towers =
         {
-            new Vector3(24f, 3.5f, 24f), new Vector3(-24f, 3.5f, 24f),
-            new Vector3(24f, 3.5f, -24f), new Vector3(-24f, 3.5f, -24f)
+            new Vector3(46f, 3.5f, 46f), new Vector3(-46f, 3.5f, 46f),
+            new Vector3(46f, 3.5f, -46f), new Vector3(-46f, 3.5f, -46f)
         };
         foreach (Vector3 pos in towers)
             CreatePrimitive(root.transform, PrimitiveType.Cylinder, "Watch Tower", pos, new Vector3(1.3f, 3.2f, 1.3f), stone);
 
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "Castle Gate", new Vector3(0f, 2.5f, 22.0f), new Vector3(6.0f, 5.0f, 0.6f), GetOrCreateMaterial("GateWood", new Color(0.12f, 0.07f, 0.04f)));
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "Castle Gate", new Vector3(0f, 2.5f, CourtyardWallOffset), new Vector3(6.0f, 5.0f, 0.6f), GetOrCreateMaterial("GateWood", new Color(0.12f, 0.07f, 0.04f)));
         for (int i = -2; i <= 2; i += 2)
-            CreatePrimitive(root.transform, PrimitiveType.Cube, "Blue Banner", new Vector3(i * 4.0f, 4.2f, 21.5f), new Vector3(1.0f, 1.8f, 0.10f), blue);
+            CreatePrimitive(root.transform, PrimitiveType.Cube, "Blue Banner", new Vector3(i * 4.0f, 4.2f, CourtyardWallOffset - 0.5f), new Vector3(1.0f, 1.8f, 0.10f), blue);
 
-        CreateTorch(root.transform, new Vector3(-18f, 1.4f, 20.5f));
-        CreateTorch(root.transform, new Vector3(18f, 1.4f, 20.5f));
-        CreateTorch(root.transform, new Vector3(-18f, 1.4f, -20.5f));
-        CreateTorch(root.transform, new Vector3(18f, 1.4f, -20.5f));
+        CreateTorch(root.transform, new Vector3(-36f, 1.4f, 42.5f));
+        CreateTorch(root.transform, new Vector3(36f, 1.4f, 42.5f));
+        CreateTorch(root.transform, new Vector3(-36f, 1.4f, -42.5f));
+        CreateTorch(root.transform, new Vector3(36f, 1.4f, -42.5f));
         CreateDirectionalLight(root.transform, new Color(0.42f, 0.55f, 0.85f), 0.75f, new Vector3(55f, 30f, 0f));
         return root;
     }
@@ -519,20 +525,20 @@ public static class TinyParryArenaBuilder
         Material carpet = GetOrCreateMaterial("RoyalCarpet", new Color(0.38f, 0.025f, 0.025f));
         Material gold = GetOrCreateMaterial("RoyalGold", new Color(0.58f, 0.38f, 0.08f));
 
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "Hall Floor", new Vector3(0f, -0.5f, 0f), new Vector3(24f, 1f, 32f), floor);
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "Back Wall", new Vector3(0f, 4.0f, 16f), new Vector3(24f, 9f, 1f), stone);
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "Left Wall", new Vector3(-12f, 4.0f, 0f), new Vector3(1f, 9f, 32f), stone);
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "Right Wall", new Vector3(12f, 4.0f, 0f), new Vector3(1f, 9f, 32f), stone);
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "Red Carpet", new Vector3(0f, 0.03f, 1f), new Vector3(4.0f, 0.08f, 27f), carpet);
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "Throne Dais", new Vector3(0f, 0.4f, 13.0f), new Vector3(5.0f, 0.8f, 3.2f), stone);
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "Throne Seat", new Vector3(0f, 1.35f, 13.6f), new Vector3(1.5f, 1.8f, 1.2f), gold);
-        CreatePrimitive(root.transform, PrimitiveType.Cube, "Throne Back", new Vector3(0f, 2.6f, 14.1f), new Vector3(2.2f, 3.2f, 0.5f), gold);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "Hall Floor", new Vector3(0f, -0.5f, 0f), new Vector3(HallWidth, 1f, HallLength), floor);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "Back Wall", new Vector3(0f, 4.0f, 32f), new Vector3(HallWidth, 9f, 1f), stone);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "Left Wall", new Vector3(-24f, 4.0f, 0f), new Vector3(1f, 9f, HallLength), stone);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "Right Wall", new Vector3(24f, 4.0f, 0f), new Vector3(1f, 9f, HallLength), stone);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "Red Carpet", new Vector3(0f, 0.03f, 1f), new Vector3(4.0f, 0.08f, 59f), carpet);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "Throne Dais", new Vector3(0f, 0.4f, 29.0f), new Vector3(5.0f, 0.8f, 3.2f), stone);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "Throne Seat", new Vector3(0f, 1.35f, 29.6f), new Vector3(1.5f, 1.8f, 1.2f), gold);
+        CreatePrimitive(root.transform, PrimitiveType.Cube, "Throne Back", new Vector3(0f, 2.6f, 30.1f), new Vector3(2.2f, 3.2f, 0.5f), gold);
 
         for (int side = -1; side <= 1; side += 2)
         {
             for (int z = -5; z <= 5; z += 5)
             {
-                Vector3 pos = new Vector3(side * 9.0f, 2.6f, z * 1.8f);
+                Vector3 pos = new Vector3(side * 18.0f, 2.6f, z * 3.6f);
                 CreatePrimitive(root.transform, PrimitiveType.Cylinder, "Royal Pillar", pos, new Vector3(0.55f, 2.6f, 0.55f), stone);
                 CreateTorch(root.transform, pos + Vector3.up * 2.6f);
             }

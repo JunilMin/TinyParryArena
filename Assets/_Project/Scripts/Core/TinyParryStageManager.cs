@@ -371,7 +371,7 @@ public sealed class TinyParryStageManager : MonoBehaviour
     }
 
     private string GetStageName(int index) => stageNames != null && index >= 0 && index < stageNames.Length ? stageNames[index] : $"Round {index + 1}";
-    private static Vector3 GetPlayerSpawn(int stageIndex) => new Vector3(0f, 0.15f, stageIndex == 2 || stageIndex == 4 ? -10f : -8f);
+    private static Vector3 GetPlayerSpawn(int stageIndex) => new Vector3(0f, 0.15f, stageIndex == 2 || stageIndex >= 5 ? -16f : -14f);
 
     private void HandleDebugKeys()
     {

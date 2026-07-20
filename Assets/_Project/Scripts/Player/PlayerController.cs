@@ -14,7 +14,7 @@ public sealed class PlayerController : MonoBehaviour
     [SerializeField] private float gravity = -25f;
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private float fallResetY = -8f;
-    [SerializeField] private Vector3 fallbackSpawn = new Vector3(0f, 0.15f, -8.5f);
+    [SerializeField] private Vector3 fallbackSpawn = new Vector3(0f, 0.15f, -14f);
 
     [Header("Dash / Dodge")]
     [SerializeField] private float dashDistance = 4.1f;
