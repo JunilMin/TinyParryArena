@@ -15,7 +15,7 @@ public static class CombatAnimationSetup
     private const string BossControllerPath = OutputRoot + "/BossCombat.controller";
     private const string PlayerModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Knight.fbx";
     private const string BossModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Barbarian.fbx";
-    private const string ControllerSchema = "grounded-bow-blade-animation-v6";
+    private const string ControllerSchema = "instant-guard-wide-bow-animation-v7";
     private static bool running;
 
     static CombatAnimationSetup() => EditorApplication.delayCall += SetupIfNeeded;
@@ -139,9 +139,9 @@ public static class CombatAnimationSetup
         AddAction(machine, locomotion, "Dodge Left", "DodgeLeft", "Dodge_Left", 0.04f, true);
         AddAction(machine, locomotion, "Dodge Right", "DodgeRight", "Dodge_Right", 0.04f, true);
         AddAction(machine, locomotion, "Death", "Death", "GreatSword_Death", 0.08f, false);
-        AddDirectState(machine, locomotion, "Bow Attack 1", LoadNamedClip(KayKitMeleePath, "Melee_2H_Attack_Slice"), 0.48f);
-        AddDirectState(machine, locomotion, "Bow Attack 2", LoadNamedClip(KayKitMeleePath, "Melee_2H_Attack_Spin"), 0.54f);
-        AddDirectState(machine, locomotion, "Bow Attack 3", LoadNamedClip(KayKitMeleePath, "Melee_2H_Attack_Chop"), 0.58f);
+        AddDirectState(machine, locomotion, "Bow Attack 1", LoadNamedClip(KayKitMeleePath, "Melee_2H_Attack_Spinning"), 0.58f);
+        AddDirectState(machine, locomotion, "Bow Attack 2", LoadNamedClip(KayKitMeleePath, "Melee_2H_Attack_Spin"), 0.62f);
+        AddDirectState(machine, locomotion, "Bow Attack 3", LoadNamedClip(KayKitMeleePath, "Melee_1H_Attack_Jump_Chop"), 0.66f);
         AddDirectState(machine, locomotion, "Bow Shot", LoadNamedClip(KayKitRangedPath, "Ranged_Bow_Release"), 0.52f);
         AssetImporter importer = AssetImporter.GetAtPath(path);
         importer.userData = ControllerSchema;
