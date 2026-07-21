@@ -22,7 +22,7 @@ public static class PlayerCharacterVisualBootstrap
         }
 
         PlayerCharacterVisualConfig config = Resources.Load<PlayerCharacterVisualConfig>(ResourcePath);
-        GameObject prefab = isPlayer ? config?.playerPrefab : config?.bossPrefab;
+        GameObject prefab = isPlayer ? config?.playerPrefab : SelectBossPrefab(config, character);
         if (prefab == null) return false;
 
         Animator oldAnimator = character.GetComponentInChildren<Animator>(true);
@@ -78,6 +78,25 @@ public static class PlayerCharacterVisualBootstrap
         }
         visualRoot = replacement.transform;
         return true;
+    }
+
+    private static GameObject SelectBossPrefab(PlayerCharacterVisualConfig config, GameObject character)
+    {
+        if (config == null)
+            return null;
+
+        BossAI boss = character.GetComponent<BossAI>();
+        if (boss == null || config.bossPrefabs == null || config.bossPrefabs.Length == 0)
+            return config.bossPrefab;
+
+        int startIndex = Mathf.Max(0, boss.StageLevel - 1) % config.bossPrefabs.Length;
+        for (int offset = 0; offset < config.bossPrefabs.Length; offset++)
+        {
+            GameObject candidate = config.bossPrefabs[(startIndex + offset) % config.bossPrefabs.Length];
+            if (candidate != null)
+                return candidate;
+        }
+        return config.bossPrefab;
     }
 
     private static Transform FindHand(Animator animator, Transform root, bool right)

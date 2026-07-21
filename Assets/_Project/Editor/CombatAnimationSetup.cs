@@ -15,10 +15,27 @@ public static class CombatAnimationSetup
     private const string BossControllerPath = OutputRoot + "/BossCombat.controller";
     private const string PlayerModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Knight.fbx";
     private const string BossModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Barbarian.fbx";
-    private const string ControllerSchema = "grounded-hit-instant-guard-one-hand-bow-v8";
+    private const string CharacterSetPath = "Assets/_Project/Resources/Characters/OriginalCharacterSet.asset";
+    private static readonly string[] BossModelPaths =
+    {
+        BossModelPath,
+        "Assets/ThirdParty/KayKit/Skeletons/Skeleton_Warrior.fbx",
+        "Assets/ThirdParty/KayKit/Skeletons/Skeleton_Rogue.fbx",
+        "Assets/ThirdParty/KayKit/Skeletons/Skeleton_Mage.fbx",
+        "Assets/ThirdParty/KayKit/Skeletons/Skeleton_Minion.fbx"
+    };
+    private const string ControllerSchema = "kaykit-boss-variants-v9";
     private static bool running;
 
-    static CombatAnimationSetup() => EditorApplication.delayCall += SetupIfNeeded;
+    static CombatAnimationSetup()
+    {
+        EditorApplication.delayCall += SetupIfNeeded;
+        EditorApplication.playModeStateChanged += state =>
+        {
+            if (state == PlayModeStateChange.EnteredEditMode)
+                EditorApplication.delayCall += SetupIfNeeded;
+        };
+    }
 
     [MenuItem("Tiny Parry Arena/Animations/Rebuild Combat Animators")]
     public static void Rebuild()
@@ -32,7 +49,9 @@ public static class CombatAnimationSetup
     {
         if (running || EditorApplication.isPlayingOrWillChangePlaymode) return;
         ConfigureCharacterRig(PlayerModelPath);
-        ConfigureCharacterRig(BossModelPath);
+        foreach (string bossModelPath in BossModelPaths)
+            ConfigureCharacterRig(bossModelPath);
+        ConfigureCharacterVisualSet();
         if (HasCurrentController(PlayerControllerPath) && HasCurrentController(BossControllerPath)) return;
 
         running = true;
@@ -60,6 +79,21 @@ public static class CombatAnimationSetup
         {
             running = false;
         }
+    }
+
+    private static void ConfigureCharacterVisualSet()
+    {
+        PlayerCharacterVisualConfig config = AssetDatabase.LoadAssetAtPath<PlayerCharacterVisualConfig>(CharacterSetPath);
+        if (config == null)
+            return;
+
+        GameObject[] variants = new GameObject[BossModelPaths.Length];
+        for (int i = 0; i < BossModelPaths.Length; i++)
+            variants[i] = AssetDatabase.LoadAssetAtPath<GameObject>(BossModelPaths[i]);
+
+        config.bossPrefab = variants[0];
+        config.bossPrefabs = variants;
+        EditorUtility.SetDirty(config);
     }
 
     private static bool HasCurrentController(string path)
