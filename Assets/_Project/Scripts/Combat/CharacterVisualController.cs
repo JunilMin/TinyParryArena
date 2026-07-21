@@ -31,6 +31,7 @@ public sealed class CharacterVisualController : MonoBehaviour
     private Vector3 visualBasePosition;
     private Quaternion visualBaseRotation;
     private bool dead;
+    private PlayerWeaponClass weaponClass;
 
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
     private static readonly int HitHash = Animator.StringToHash("Hit");
@@ -43,12 +44,25 @@ public sealed class CharacterVisualController : MonoBehaviour
     private static readonly int Attack1StateHash = Animator.StringToHash("Base Layer.Attack 1");
     private static readonly int Attack2StateHash = Animator.StringToHash("Base Layer.Attack 2");
     private static readonly int Attack3StateHash = Animator.StringToHash("Base Layer.Attack 3");
+    private static readonly int BowAttack1StateHash = Animator.StringToHash("Base Layer.Bow Attack 1");
+    private static readonly int BowAttack2StateHash = Animator.StringToHash("Base Layer.Bow Attack 2");
+    private static readonly int BowAttack3StateHash = Animator.StringToHash("Base Layer.Bow Attack 3");
+    private static readonly int BowShotStateHash = Animator.StringToHash("Base Layer.Bow Shot");
 
     public bool UsesAuthoredAnimations => animator != null && animator.runtimeAnimatorController != null;
 
     public float GetAttackImpactDelay(int combo)
     {
         if (!UsesAuthoredAnimations) return -1f;
+        if (weaponClass == PlayerWeaponClass.Bow)
+        {
+            switch (Math.Abs(combo) % 3)
+            {
+                case 0: return 0.24f;
+                case 1: return 0.28f;
+                default: return 0.32f;
+            }
+        }
         switch (Math.Abs(combo) % 3)
         {
             case 0: return 0.48f;
@@ -198,14 +212,27 @@ public sealed class CharacterVisualController : MonoBehaviour
         {
             int attack = Math.Abs(combo) % 3;
             ResetActionTriggers();
+            int state = weaponClass == PlayerWeaponClass.Bow
+                ? attack == 0 ? BowAttack1StateHash : attack == 1 ? BowAttack2StateHash : BowAttack3StateHash
+                : attack == 0 ? Attack1StateHash : attack == 1 ? Attack2StateHash : Attack3StateHash;
             animator.CrossFadeInFixedTime(
-                attack == 0 ? Attack1StateHash : attack == 1 ? Attack2StateHash : Attack3StateHash,
+                state,
                 0.04f,
                 0,
                 0f);
             return;
         }
         StartAction(AttackPose(combo, intensity));
+    }
+
+    public void SetWeaponClass(PlayerWeaponClass value) => weaponClass = value;
+
+    public void PlayBowShot()
+    {
+        if (!UsesAuthoredAnimations)
+            return;
+        ResetActionTriggers();
+        animator.CrossFadeInFixedTime(BowShotStateHash, 0.05f, 0, 0f);
     }
 
     private void ResetActionTriggers()

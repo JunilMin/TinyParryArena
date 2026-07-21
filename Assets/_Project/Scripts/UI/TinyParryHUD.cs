@@ -250,8 +250,8 @@ public sealed class TinyParryHUD : MonoBehaviour
         titleVisible = false;
         restRoomVisible = false;
         restRoomProgression = null;
-        resultText = "CHOOSE YOUR CLASS";
-        resultHint = "1  GREATSWORD\n2  DUAL SWORDS\n3  SPEAR\n\nOnly skills for the selected weapon will be available.";
+        resultText = "CHOOSE YOUR WEAPON";
+        resultHint = "1  KEEP GREATSWORD\n2  SWITCH TO BOW\n\nThe bow uses fast melee attacks. Press R to fire an arrow skill.";
         overlayVisible = true;
     }
 

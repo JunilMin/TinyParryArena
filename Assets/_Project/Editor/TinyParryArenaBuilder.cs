@@ -222,30 +222,18 @@ public static class TinyParryArenaBuilder
 
         Transform sword = AttachEquipment(KayRoot + "/Weapons/sword_2handed.fbx", rightRoot, "Player Greatsword");
         Transform shield = AttachEquipment(KayRoot + "/Weapons/shield_badge.fbx", leftRoot, "Player Shield");
-        Transform rightDagger = AttachEquipment(KayRoot + "/Weapons/sword_1handed.fbx", rightRoot, "Right Sword");
-        Transform leftDagger = AttachEquipment(KayRoot + "/Weapons/sword_1handed.fbx", leftRoot, "Left Sword");
-        Transform spear = AttachEquipment("Assets/ThirdParty/KenneyMiniArena/Models/FBX format/weapon-spear.fbx", rightRoot, "Player Spear");
+        Transform bow = AttachEquipment("Assets/_Project/Resources/Weapons/Bow.fbx", rightRoot, "Player Bow");
 
         // Build three clearly different weapon silhouettes.
         sword.localScale = Vector3.one * 1.35f;
         sword.localPosition = new Vector3(0f, 0.02f, 0.08f);
         sword.localRotation = Quaternion.Euler(0f, 0f, 0f);
-        rightDagger.localScale = Vector3.one * 1.02f;
-        leftDagger.localScale = Vector3.one * 1.02f;
-        rightDagger.localPosition = new Vector3(0f, 0.02f, 0.05f);
-        leftDagger.localPosition = new Vector3(0f, 0.02f, 0.05f);
-        rightDagger.localRotation = Quaternion.Euler(0f, 0f, 0f);
-        leftDagger.localRotation = Quaternion.Euler(0f, 180f, 0f);
-
-        // Kenney's spear is intentionally small. Enlarge it to a readable polearm length.
-        spear.localScale = Vector3.one * 2.35f;
-        spear.localPosition = new Vector3(0f, 0f, 0.22f);
-        spear.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        bow.localScale = Vector3.one * 1.25f;
+        bow.localPosition = new Vector3(0.18f, 0.02f, 0.14f);
+        bow.localRotation = Quaternion.identity;
         sword.gameObject.SetActive(true);
         shield.gameObject.SetActive(false);
-        rightDagger.gameObject.SetActive(false);
-        leftDagger.gameObject.SetActive(false);
-        spear.gameObject.SetActive(false);
+        bow.gameObject.SetActive(false);
 
         SerializedObject combatObject = new SerializedObject(combat);
         combatObject.FindProperty("weaponPivot").objectReferenceValue = rightRoot;
@@ -253,9 +241,8 @@ public static class TinyParryArenaBuilder
         combatObject.FindProperty("shieldRenderer").objectReferenceValue = null;
         combatObject.FindProperty("swordModel").objectReferenceValue = sword.gameObject;
         combatObject.FindProperty("shieldModel").objectReferenceValue = shield.gameObject;
-        combatObject.FindProperty("rightDaggerModel").objectReferenceValue = rightDagger.gameObject;
-        combatObject.FindProperty("leftDaggerModel").objectReferenceValue = leftDagger.gameObject;
-        combatObject.FindProperty("spearModel").objectReferenceValue = spear.gameObject;
+        combatObject.FindProperty("bowModel").objectReferenceValue = bow.gameObject;
+        combatObject.FindProperty("arrowPrefab").objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Resources/Weapons/Arrow.fbx");
         combatObject.ApplyModifiedPropertiesWithoutUndo();
 
         return root;
