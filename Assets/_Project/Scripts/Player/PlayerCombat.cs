@@ -297,8 +297,18 @@ public sealed class PlayerCombat : MonoBehaviour
         float classSpeed = weaponClass == PlayerWeaponClass.DualSwords ? 1.14f : weaponClass == PlayerWeaponClass.Spear ? 0.94f : weaponClass == PlayerWeaponClass.Greatsword ? 0.82f : 1f;
         float passiveSpeed = weaponClass == PlayerWeaponClass.DualSwords ? 1f + skillRanks[5] * 0.03f : weaponClass == PlayerWeaponClass.Greatsword ? 1f + skillRanks[8] * 0.02f : 1f;
         float effectiveSpeed = Mathf.Max(0.35f, attackSpeedMultiplier * classSpeed * passiveSpeed);
-        windupTime /= effectiveSpeed;
-        contactTime /= effectiveSpeed;
+        float authoredImpactDelay = visual != null ? visual.GetAttackImpactDelay(attack) : -1f;
+        if (authoredImpactDelay > 0f)
+        {
+            authoredImpactDelay /= Mathf.Max(0.35f, attackSpeedMultiplier);
+            windupTime = authoredImpactDelay * 0.82f;
+            contactTime = authoredImpactDelay * 0.18f;
+        }
+        else
+        {
+            windupTime /= effectiveSpeed;
+            contactTime /= effectiveSpeed;
+        }
 
         yield return MoveAndRotateWeapon(startPosition, windupPosition, start, windup, windupTime);
 
@@ -311,7 +321,10 @@ public sealed class PlayerCombat : MonoBehaviour
         skillBonus *= PassiveDamageMultiplier();
         DealDamage(Mathf.Max(1, Mathf.RoundToInt(baseDamage * damageMultiplier * classDamage * skillBonus)));
         yield return new WaitForSeconds(0.045f);
-        yield return MoveAndRotateWeapon(contactPosition, startPosition, contact, start, (attack == 2 ? 0.20f : 0.15f) / effectiveSpeed);
+        float recoveryTime = authoredImpactDelay > 0f
+            ? (attack == 2 ? 0.40f : 0.32f) / Mathf.Max(0.35f, attackSpeedMultiplier)
+            : (attack == 2 ? 0.20f : 0.15f) / effectiveSpeed;
+        yield return MoveAndRotateWeapon(contactPosition, startPosition, contact, start, recoveryTime);
 
         comboIndex = (comboIndex + 1) % comboDamage.Length;
         busy = false;
