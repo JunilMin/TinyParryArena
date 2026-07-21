@@ -6,6 +6,7 @@ public sealed class CharacterGroundingConstraint : MonoBehaviour
     [SerializeField] private Transform characterRoot;
     [SerializeField, Min(1f)] private float correctionSpeed = 30f;
     [SerializeField, Min(0.01f)] private float maximumStep = 0.35f;
+    [SerializeField, Min(0f)] private float footPlantDepth = 0.10f;
 
     public void Configure(Transform owner) => characterRoot = owner;
 
@@ -30,7 +31,7 @@ public sealed class CharacterGroundingConstraint : MonoBehaviour
         if (float.IsPositiveInfinity(lowest))
             return;
 
-        float difference = Mathf.Clamp(groundHeight - lowest, -maximumStep, maximumStep);
+        float difference = Mathf.Clamp(groundHeight - footPlantDepth - lowest, -maximumStep, maximumStep);
         float blend = 1f - Mathf.Exp(-correctionSpeed * Time.deltaTime);
         transform.position += Vector3.up * difference * blend;
     }

@@ -22,8 +22,8 @@ public sealed class BossAI : MonoBehaviour
     [SerializeField] private float turnSpeed = 13f;
 
     [Header("Combat Spacing")]
-    [SerializeField, Min(0.5f)] private float minimumCombatSpacing = 2.15f;
-    [SerializeField, Min(0.1f)] private float spacingCorrectionSpeed = 3.4f;
+    [SerializeField, Min(0.5f)] private float minimumCombatSpacing = 2.35f;
+    [SerializeField, Min(0.1f)] private float spacingCorrectionSpeed = 12f;
     [SerializeField, Min(0f)] private float preferredSpacingPadding = 0.35f;
 
     [Header("Posture")]
@@ -189,13 +189,10 @@ public sealed class BossAI : MonoBehaviour
         delta.y = 0f;
         float distance = delta.magnitude;
 
-        if (!stunned)
-        {
-            MaintainMinimumSpacing(delta, distance);
-            delta = player.position - transform.position;
-            delta.y = 0f;
-            distance = delta.magnitude;
-        }
+        MaintainMinimumSpacing(delta, distance);
+        delta = player.position - transform.position;
+        delta.y = 0f;
+        distance = delta.magnitude;
 
         FacePlayer(delta, busy ? turnSpeed * 1.35f : turnSpeed);
 
@@ -232,6 +229,21 @@ public sealed class BossAI : MonoBehaviour
             minimumCombatSpacing - distance,
             spacingCorrectionSpeed * Time.deltaTime);
         transform.position += away * correction;
+    }
+
+    private void LateUpdate()
+    {
+        if (player == null || selfHealth == null || selfHealth.IsDead)
+            return;
+
+        Vector3 flatDelta = player.position - transform.position;
+        flatDelta.y = 0f;
+        float distance = flatDelta.magnitude;
+        if (distance >= minimumCombatSpacing)
+            return;
+
+        Vector3 away = distance > 0.001f ? -flatDelta / distance : -transform.forward;
+        transform.position += away * (minimumCombatSpacing - distance);
     }
 
     private void FacePlayer(Vector3 flatDelta, float speed)

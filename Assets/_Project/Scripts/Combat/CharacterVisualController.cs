@@ -262,9 +262,9 @@ public sealed class CharacterVisualController : MonoBehaviour
         if (UsesAuthoredAnimations)
         {
             ResetActionTriggers();
-            // Enter the established guard pose immediately. The gameplay parry
-            // window already starts on the same input frame in PlayerCombat.
-            animator.Play(InstantGuardStateHash, 0, 0.35f);
+            // Greatsword and bow share the same authored guard motion. The
+            // gameplay parry window still begins on this input frame.
+            animator.Play(InstantGuardStateHash, 0, 0.32f);
             animator.Update(0f);
         }
         else StartAction(ActionPose(new Vector3(-18f, -10f, 42f), 0.08f, 0.16f, 0.11f));

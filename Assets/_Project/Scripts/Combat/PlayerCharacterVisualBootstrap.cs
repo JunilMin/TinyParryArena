@@ -16,7 +16,12 @@ public static class PlayerCharacterVisualBootstrap
         Transform existing = FindDescendant(character.transform, replacementName);
         if (existing != null)
         {
+            CharacterGroundingConstraint existingGrounding = existing.GetComponent<CharacterGroundingConstraint>();
+            if (existingGrounding == null)
+                existingGrounding = existing.gameObject.AddComponent<CharacterGroundingConstraint>();
+            existingGrounding.Configure(character.transform);
             animator = existing.GetComponentInChildren<Animator>(true);
+            ApplyCombatController(animator, isPlayer, replacementName);
             visualRoot = existing;
             return true;
         }
@@ -66,18 +71,23 @@ public static class PlayerCharacterVisualBootstrap
         if (oldVisual != null && !oldVisual.IsChildOf(replacement.transform))
             oldVisual.gameObject.SetActive(false);
 
-        if (animator != null) animator.applyRootMotion = false;
-        if (animator != null)
-        {
-            string controllerPath = isPlayer ? "Animations/PlayerCombat" : "Animations/BossCombat";
-            RuntimeAnimatorController controller = Resources.Load<RuntimeAnimatorController>(controllerPath);
-            if (controller != null && animator.isHuman)
-                animator.runtimeAnimatorController = controller;
-            else if (!animator.isHuman)
-                Debug.LogError(replacementName + " must use a Humanoid avatar for combat animation retargeting.");
-        }
+        ApplyCombatController(animator, isPlayer, replacementName);
         visualRoot = replacement.transform;
         return true;
+    }
+
+    private static void ApplyCombatController(Animator targetAnimator, bool isPlayer, string visualName)
+    {
+        if (targetAnimator == null)
+            return;
+
+        targetAnimator.applyRootMotion = false;
+        RuntimeAnimatorController controller = Resources.Load<RuntimeAnimatorController>(
+            isPlayer ? "Animations/PlayerCombat" : "Animations/BossCombat");
+        if (controller != null && targetAnimator.isHuman)
+            targetAnimator.runtimeAnimatorController = controller;
+        else if (!targetAnimator.isHuman)
+            Debug.LogError(visualName + " must use a Humanoid avatar for combat animation retargeting.");
     }
 
     private static GameObject SelectBossPrefab(PlayerCharacterVisualConfig config, GameObject character)
