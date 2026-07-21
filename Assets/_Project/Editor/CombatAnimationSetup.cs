@@ -24,7 +24,7 @@ public static class CombatAnimationSetup
         "Assets/ThirdParty/KayKit/Skeletons/Skeleton_Mage.fbx",
         "Assets/ThirdParty/KayKit/Skeletons/Skeleton_Minion.fbx"
     };
-    private const string ControllerSchema = "kaykit-boss-variants-v9";
+    private const string ControllerSchema = "greatsword-guard-grounding-spacing-v13";
     private static bool running;
 
     static CombatAnimationSetup()
@@ -167,7 +167,7 @@ public static class CombatAnimationSetup
         AddAction(machine, locomotion, "Attack 2", "Attack2", "GreatSword_Attack02", 0.06f, true, 0.98f);
         AddAction(machine, locomotion, "Attack 3", "Attack3", "GreatSword_Attack03", 0.06f, true, 1.12f);
         AddAction(machine, locomotion, "Block", "Block", "GreatSword_Block", 0.05f, true);
-        AddDirectState(machine, locomotion, "Instant Guard", LoadNamedClip(KayKitMeleePath, "Melee_Blocking"), 0.40f);
+        AddDirectState(machine, locomotion, "Instant Guard", LoadClip("GreatSword_Block"), 0.42f);
         AddAction(machine, locomotion, "Hit", "Hit", "GreatSword_Hit", 0.04f, true);
         AddAction(machine, locomotion, "Dodge Forward", "DodgeForward", "Dodge_Forward", 0.04f, true);
         AddAction(machine, locomotion, "Dodge Backward", "DodgeBackward", "Dodge_Backward", 0.04f, true);
