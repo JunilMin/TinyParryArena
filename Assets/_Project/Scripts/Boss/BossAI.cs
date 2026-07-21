@@ -326,7 +326,9 @@ public sealed class BossAI : MonoBehaviour
     {
         lastStrikeParried = false;
         SetBodyColor(telegraphColor);
-        float preStrike = Mathf.Max(0f, telegraph - strikeLead);
+        float authoredImpactDelay = visual != null ? visual.GetAttackImpactDelay(motion) : -1f;
+        float activeStrikeLead = authoredImpactDelay > 0f ? authoredImpactDelay : strikeLead;
+        float preStrike = Mathf.Max(0f, telegraph - activeStrikeLead);
         if (visual != null)
             visual.PlayTelegraph(motion, Mathf.Max(0.18f, preStrike), 1.55f);
         yield return new WaitForSeconds(preStrike);
@@ -335,12 +337,12 @@ public sealed class BossAI : MonoBehaviour
             visual.PlayAttack(motion, 1.65f);
 
         // Delay the whoosh into the attack pose so it matches the visible blade acceleration.
-        float swingSoundDelay = Mathf.Min(0.11f, strikeLead * 0.55f);
+        float swingSoundDelay = Mathf.Min(0.18f, activeStrikeLead * 0.42f);
         if (swingSoundDelay > 0f)
             yield return new WaitForSeconds(swingSoundDelay);
         GameAudioManager.Instance.PlayBossSwing(motion);
 
-        float remainingStrikeLead = Mathf.Max(0f, strikeLead - swingSoundDelay);
+        float remainingStrikeLead = Mathf.Max(0f, activeStrikeLead - swingSoundDelay);
         if (remainingStrikeLead > 0f)
             yield return new WaitForSeconds(remainingStrikeLead);
 

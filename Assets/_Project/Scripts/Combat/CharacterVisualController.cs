@@ -43,6 +43,17 @@ public sealed class CharacterVisualController : MonoBehaviour
 
     public bool UsesAuthoredAnimations => animator != null && animator.runtimeAnimatorController != null;
 
+    public float GetAttackImpactDelay(int combo)
+    {
+        if (!UsesAuthoredAnimations) return -1f;
+        switch (Math.Abs(combo) % 3)
+        {
+            case 0: return 0.48f;
+            case 1: return 0.58f;
+            default: return 0.68f;
+        }
+    }
+
     private void Awake()
     {
         if (PlayerCharacterVisualBootstrap.TryReplace(gameObject, out Animator replacementAnimator, out Transform replacementRoot))

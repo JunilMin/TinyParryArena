@@ -13,6 +13,7 @@ public static class CombatAnimationSetup
     private const string BossControllerPath = OutputRoot + "/BossCombat.controller";
     private const string PlayerModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Knight.fbx";
     private const string BossModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Barbarian.fbx";
+    private const string ControllerSchema = "combat-animation-v2";
     private static bool running;
 
     static CombatAnimationSetup() => EditorApplication.delayCall += SetupIfNeeded;
@@ -30,8 +31,7 @@ public static class CombatAnimationSetup
         if (running || EditorApplication.isPlayingOrWillChangePlaymode) return;
         ConfigureCharacterRig(PlayerModelPath);
         ConfigureCharacterRig(BossModelPath);
-        if (AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(PlayerControllerPath) != null &&
-            AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(BossControllerPath) != null) return;
+        if (HasCurrentController(PlayerControllerPath) && HasCurrentController(BossControllerPath)) return;
 
         running = true;
         try
@@ -45,6 +45,8 @@ public static class CombatAnimationSetup
             }
 
             AssetDatabase.Refresh();
+            AssetDatabase.DeleteAsset(PlayerControllerPath);
+            AssetDatabase.DeleteAsset(BossControllerPath);
             CreateController(PlayerControllerPath);
             CreateController(BossControllerPath);
             AssetDatabase.SaveAssets();
@@ -54,6 +56,12 @@ public static class CombatAnimationSetup
         {
             running = false;
         }
+    }
+
+    private static bool HasCurrentController(string path)
+    {
+        AssetImporter importer = AssetImporter.GetAtPath(path);
+        return importer != null && importer.userData == ControllerSchema;
     }
 
     private static void ConfigureCharacterRig(string path)
@@ -115,9 +123,9 @@ public static class CombatAnimationSetup
         locomotion.motion = tree;
         machine.defaultState = locomotion;
 
-        AddAction(machine, locomotion, "Attack 1", "Attack1", "GreatSword_Attack01", 0.06f, true);
-        AddAction(machine, locomotion, "Attack 2", "Attack2", "GreatSword_Attack02", 0.06f, true);
-        AddAction(machine, locomotion, "Attack 3", "Attack3", "GreatSword_Attack03", 0.06f, true);
+        AddAction(machine, locomotion, "Attack 1", "Attack1", "GreatSword_Attack01", 0.06f, true, 0.82f);
+        AddAction(machine, locomotion, "Attack 2", "Attack2", "GreatSword_Attack02", 0.06f, true, 0.98f);
+        AddAction(machine, locomotion, "Attack 3", "Attack3", "GreatSword_Attack03", 0.06f, true, 1.12f);
         AddAction(machine, locomotion, "Block", "Block", "GreatSword_Block", 0.05f, true);
         AddAction(machine, locomotion, "Hit", "Hit", "GreatSword_Hit", 0.04f, true);
         AddAction(machine, locomotion, "Dodge Forward", "DodgeForward", "Dodge_Forward", 0.04f, true);
@@ -125,13 +133,18 @@ public static class CombatAnimationSetup
         AddAction(machine, locomotion, "Dodge Left", "DodgeLeft", "Dodge_Left", 0.04f, true);
         AddAction(machine, locomotion, "Dodge Right", "DodgeRight", "Dodge_Right", 0.04f, true);
         AddAction(machine, locomotion, "Death", "Death", "GreatSword_Death", 0.08f, false);
+        AssetImporter importer = AssetImporter.GetAtPath(path);
+        importer.userData = ControllerSchema;
+        importer.SaveAndReimport();
     }
 
     private static void AddAction(AnimatorStateMachine machine, AnimatorState locomotion, string stateName,
-        string trigger, string clipName, float duration, bool returns)
+        string trigger, string clipName, float duration, bool returns, float targetDuration = 0f)
     {
         AnimatorState state = machine.AddState(stateName);
         state.motion = LoadClip(clipName);
+        if (targetDuration > 0f && state.motion is AnimationClip clip)
+            state.speed = Mathf.Max(0.01f, clip.length / targetDuration);
         AnimatorStateTransition enter = machine.AddAnyStateTransition(state);
         enter.hasExitTime = false;
         enter.duration = duration;
