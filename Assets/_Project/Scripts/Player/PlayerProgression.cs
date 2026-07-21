@@ -4,8 +4,7 @@ public enum PlayerWeaponClass
 {
     Unchosen,
     Greatsword,
-    DualSwords,
-    Spear
+    Bow
 }
 
 public enum SkillKind
@@ -83,32 +82,18 @@ public sealed class PlayerProgression : MonoBehaviour
         new WeaponSkillInfo("Perfect Punishment", SkillKind.Passive, "Each rank increases the next hit after a perfect parry by 7%.")
     };
 
-    private static readonly WeaponSkillInfo[] DualSwordSkills =
+    private static readonly WeaponSkillInfo[] BowSkills =
     {
-        new WeaponSkillInfo("Twin Fang", SkillKind.Active, "Four alternating cuts delivered rapidly. Strong sustained damage with a short cooldown.", 5.5f, 190f),
-        new WeaponSkillInfo("Blade Rush", SkillKind.Active, "Dash through the target and finish with a crossing slash.", 8.0f, 225f),
-        new WeaponSkillInfo("Cross Tempest", SkillKind.Active, "A fast spinning sequence that deals repeated damage at close range.", 11.0f, 265f),
-        new WeaponSkillInfo("Shadow Reversal", SkillKind.Active, "Step backward briefly, then return with two counter-slashes.", 9.5f, 230f),
-        new WeaponSkillInfo("Hundred Cuts", SkillKind.Active, "A committed flurry with the highest dual-sword damage, but a long recovery.", 14.5f, 300f),
-        new WeaponSkillInfo("Flow Mastery", SkillKind.Passive, "Each rank increases attack speed by 3%.") ,
-        new WeaponSkillInfo("Relentless Edge", SkillKind.Passive, "Each rank increases damage of consecutive hits by 2%, stacking up to five times.") ,
-        new WeaponSkillInfo("Quick Recovery", SkillKind.Passive, "Each rank reduces active-skill cooldowns by 2%.") ,
-        new WeaponSkillInfo("Evasive Steel", SkillKind.Passive, "Each rank increases the first attack after a dodge by 5%.") ,
-        new WeaponSkillInfo("Parry Tempo", SkillKind.Passive, "Each rank grants 2% attack speed for three seconds after a successful parry.")
-    };
-
-    private static readonly WeaponSkillInfo[] SpearSkills =
-    {
-        new WeaponSkillInfo("Long Thrust", SkillKind.Active, "A long-reaching thrust that is safe, precise, and strong at punishing recovery windows.", 6.0f, 205f),
-        new WeaponSkillInfo("Vault Strike", SkillKind.Active, "Leap forward into a descending spear strike with strong stagger damage.", 9.0f, 245f),
-        new WeaponSkillInfo("Impale", SkillKind.Active, "A committed piercing attack with excellent single-target damage and reach.", 12.5f, 285f),
-        new WeaponSkillInfo("Sweeping Horizon", SkillKind.Active, "A broad circular sweep designed to catch lateral movement.", 10.0f, 235f),
-        new WeaponSkillInfo("Dragonpiercer", SkillKind.Active, "Charge briefly, then release the spear's strongest straight-line thrust.", 15.0f, 320f),
-        new WeaponSkillInfo("Reach Mastery", SkillKind.Passive, "Each rank increases spear attack range by 4%.") ,
-        new WeaponSkillInfo("Counterpoint", SkillKind.Passive, "Each rank increases damage after a successful parry by 5%.") ,
-        new WeaponSkillInfo("Steady Hands", SkillKind.Passive, "Each rank increases thrust damage by 3%.") ,
-        new WeaponSkillInfo("Hunter's Step", SkillKind.Passive, "Each rank slightly improves movement during spear attacks and skills.") ,
-        new WeaponSkillInfo("Piercing Rhythm", SkillKind.Passive, "Each rank reduces spear active-skill cooldowns by 1.5%.")
+        new WeaponSkillInfo("Piercing Arrow", SkillKind.Active, "Fire a fast arrow at the locked target. The arrow can also be aimed straight ahead without lock-on.", 5.0f, 180f),
+        new WeaponSkillInfo("Heavy Arrow", SkillKind.Active, "Draw longer and launch a heavier arrow with increased boss stagger and damage.", 7.5f, 225f),
+        new WeaponSkillInfo("Hunter's Shot", SkillKind.Active, "A quick, low-recovery shot designed to punish short openings.", 4.0f, 155f),
+        new WeaponSkillInfo("Royal Piercer", SkillKind.Active, "Fire a powerful royal arrow that excels against distant bosses.", 10.0f, 285f),
+        new WeaponSkillInfo("Northern Star", SkillKind.Active, "The strongest bow skill: a committed shot with high damage and a long cooldown.", 14.0f, 340f),
+        new WeaponSkillInfo("Swift Limbs", SkillKind.Passive, "Each rank increases bow melee attack speed by 3%.") ,
+        new WeaponSkillInfo("Sharpened Arrows", SkillKind.Passive, "Each rank increases arrow skill damage by 4%.") ,
+        new WeaponSkillInfo("Quick Nock", SkillKind.Passive, "Each rank reduces bow active-skill cooldowns by 2%.") ,
+        new WeaponSkillInfo("Close Quarters", SkillKind.Passive, "Each rank increases damage dealt by bow melee attacks by 3%.") ,
+        new WeaponSkillInfo("True Flight", SkillKind.Passive, "Each rank increases arrow travel speed and effective range.")
     };
 
     private void Awake()
@@ -183,8 +168,7 @@ public sealed class PlayerProgression : MonoBehaviour
         switch (weaponClass)
         {
             case PlayerWeaponClass.Greatsword: return "GREATSWORD";
-            case PlayerWeaponClass.DualSwords: return "DUAL SWORDS";
-            case PlayerWeaponClass.Spear: return "SPEAR";
+            case PlayerWeaponClass.Bow: return "BOW";
             default: return "UNSELECTED";
         }
     }
@@ -204,8 +188,7 @@ public sealed class PlayerProgression : MonoBehaviour
     {
         switch (weaponClass)
         {
-            case PlayerWeaponClass.DualSwords: return DualSwordSkills;
-            case PlayerWeaponClass.Spear: return SpearSkills;
+            case PlayerWeaponClass.Bow: return BowSkills;
             default: return GreatswordSkills;
         }
     }

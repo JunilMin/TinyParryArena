@@ -25,9 +25,8 @@ public sealed class PlayerCombat : MonoBehaviour
     [SerializeField] private Renderer shieldRenderer;
     [SerializeField] private GameObject swordModel;
     [SerializeField] private GameObject shieldModel;
-    [SerializeField] private GameObject rightDaggerModel;
-    [SerializeField] private GameObject leftDaggerModel;
-    [SerializeField] private GameObject spearModel;
+    [SerializeField] private GameObject bowModel;
+    [SerializeField] private GameObject arrowPrefab;
 
     private int comboIndex;
     private float lastAttackTime = -10f;
@@ -90,9 +89,8 @@ public sealed class PlayerCombat : MonoBehaviour
         weaponClass = value;
         if (swordModel != null) swordModel.SetActive(value == PlayerWeaponClass.Unchosen || value == PlayerWeaponClass.Greatsword);
         if (shieldModel != null) shieldModel.SetActive(false);
-        if (rightDaggerModel != null) rightDaggerModel.SetActive(value == PlayerWeaponClass.DualSwords);
-        if (leftDaggerModel != null) leftDaggerModel.SetActive(value == PlayerWeaponClass.DualSwords);
-        if (spearModel != null) spearModel.SetActive(value == PlayerWeaponClass.Spear);
+        if (bowModel != null) bowModel.SetActive(value == PlayerWeaponClass.Bow);
+        visual?.SetWeaponClass(value);
 
         // The hand roots remain the animation pivots. Parry works with the greatsword blade, crossed swords, or spear shaft.
         if (weaponPivot != null) weaponPivot.localScale = Vector3.one;
@@ -111,6 +109,7 @@ public sealed class PlayerCombat : MonoBehaviour
     {
         visual = GetComponent<CharacterVisualController>();
         lockOn = GetComponent<PlayerLockOn>();
+        EnsureBowEquipment();
         if (useRecommendedMeleeTargeting)
         {
             attackRange = Mathf.Max(attackRange, 2.65f);
@@ -122,6 +121,25 @@ public sealed class PlayerCombat : MonoBehaviour
             shieldIdleRotation = shieldPivot.localRotation;
             shieldIdlePosition = shieldPivot.localPosition;
         }
+    }
+
+    private void EnsureBowEquipment()
+    {
+        if (arrowPrefab == null)
+            arrowPrefab = Resources.Load<GameObject>("Weapons/Arrow");
+        if (bowModel != null || weaponPivot == null)
+            return;
+
+        GameObject prefab = Resources.Load<GameObject>("Weapons/Bow");
+        if (prefab == null)
+            return;
+
+        bowModel = Instantiate(prefab, weaponPivot, false);
+        bowModel.name = "Player Bow";
+        bowModel.transform.localPosition = new Vector3(0f, 0.02f, 0.08f);
+        bowModel.transform.localRotation = Quaternion.identity;
+        bowModel.transform.localScale = Vector3.one * 1.25f;
+        bowModel.SetActive(false);
     }
 
     private void Start()
@@ -294,8 +312,8 @@ public sealed class PlayerCombat : MonoBehaviour
                 break;
         }
 
-        float classSpeed = weaponClass == PlayerWeaponClass.DualSwords ? 1.14f : weaponClass == PlayerWeaponClass.Spear ? 0.94f : weaponClass == PlayerWeaponClass.Greatsword ? 0.82f : 1f;
-        float passiveSpeed = weaponClass == PlayerWeaponClass.DualSwords ? 1f + skillRanks[5] * 0.03f : weaponClass == PlayerWeaponClass.Greatsword ? 1f + skillRanks[8] * 0.02f : 1f;
+        float classSpeed = weaponClass == PlayerWeaponClass.Bow ? 1.35f : weaponClass == PlayerWeaponClass.Greatsword ? 0.82f : 1f;
+        float passiveSpeed = weaponClass == PlayerWeaponClass.Bow ? 1f + skillRanks[5] * 0.03f : weaponClass == PlayerWeaponClass.Greatsword ? 1f + skillRanks[8] * 0.02f : 1f;
         float effectiveSpeed = Mathf.Max(0.35f, attackSpeedMultiplier * classSpeed * passiveSpeed);
         float authoredImpactDelay = visual != null ? visual.GetAttackImpactDelay(attack) : -1f;
         if (authoredImpactDelay > 0f)
@@ -316,7 +334,7 @@ public sealed class PlayerCombat : MonoBehaviour
         GameAudioManager.Instance.PlayPlayerSwing(attack);
         yield return MoveAndRotateWeapon(windupPosition, contactPosition, windup, contact, contactTime);
         int baseDamage = comboDamage[Mathf.Clamp(attack, 0, comboDamage.Length - 1)];
-        float classDamage = weaponClass == PlayerWeaponClass.Spear ? 1.10f : weaponClass == PlayerWeaponClass.DualSwords ? 0.90f : weaponClass == PlayerWeaponClass.Greatsword ? 1.28f : 1f;
+        float classDamage = weaponClass == PlayerWeaponClass.Bow ? 0.82f : weaponClass == PlayerWeaponClass.Greatsword ? 1.28f : 1f;
         float skillBonus = 1f + skillRanks[0] * 0.025f;
         skillBonus *= PassiveDamageMultiplier();
         DealDamage(Mathf.Max(1, Mathf.RoundToInt(baseDamage * damageMultiplier * classDamage * skillBonus)));
@@ -372,13 +390,10 @@ public sealed class PlayerCombat : MonoBehaviour
         float[] cooldowns;
         switch (weaponClass)
         {
-            case PlayerWeaponClass.DualSwords: cooldowns = new[] { 5.5f, 8.0f, 11.0f, 9.5f, 14.5f }; break;
-            case PlayerWeaponClass.Spear: cooldowns = new[] { 6.0f, 9.0f, 12.5f, 10.0f, 15.0f }; break;
+            case PlayerWeaponClass.Bow: cooldowns = new[] { 5.0f, 7.5f, 4.0f, 10.0f, 14.0f }; break;
             default: cooldowns = new[] { 7.0f, 10.5f, 14.0f, 12.0f, 9.0f }; break;
         }
-        float reduction = weaponClass == PlayerWeaponClass.DualSwords
-            ? skillRanks[7] * 0.02f
-            : weaponClass == PlayerWeaponClass.Spear ? skillRanks[9] * 0.015f : 0f;
+        float reduction = weaponClass == PlayerWeaponClass.Bow ? skillRanks[7] * 0.02f : 0f;
         return cooldowns[slot] * Mathf.Clamp(1f - reduction, 0.65f, 1f);
     }
 
@@ -391,11 +406,8 @@ public sealed class PlayerCombat : MonoBehaviour
 
         switch (weaponClass)
         {
-            case PlayerWeaponClass.DualSwords:
-                yield return DualSwordSkill(equippedActiveSkill % 3, rank + equippedActiveSkill);
-                break;
-            case PlayerWeaponClass.Spear:
-                yield return SpearSkill(equippedActiveSkill % 3, rank + equippedActiveSkill);
+            case PlayerWeaponClass.Bow:
+                yield return BowSkill(equippedActiveSkill, rank);
                 break;
             default:
                 yield return GreatswordSkill(equippedActiveSkill % 3, rank + equippedActiveSkill);
@@ -444,6 +456,79 @@ public sealed class PlayerCombat : MonoBehaviour
             DealDamage(Mathf.RoundToInt((66 + rank * 13) * damageMultiplier));
             yield return new WaitForSeconds(0.22f);
         }
+    }
+
+    private IEnumerator BowSkill(int slot, int rank)
+    {
+        FaceLockedTarget();
+        if (visual != null)
+            visual.PlayBowShot();
+
+        float drawTime = slot == 2 ? 0.14f : slot == 1 || slot == 4 ? 0.38f : 0.24f;
+        yield return new WaitForSeconds(drawTime / Mathf.Max(0.5f, attackSpeedMultiplier));
+
+        CombatantHealth target = FindArrowTarget();
+        Vector3 origin = transform.position + Vector3.up * 1.15f + transform.forward * 0.55f;
+        Vector3 destination = target != null
+            ? target.transform.position + Vector3.up * 0.85f
+            : origin + transform.forward * 24f;
+        float speed = (slot == 1 || slot == 4 ? 22f : 28f) * (1f + skillRanks[9] * 0.05f);
+        int damage = Mathf.RoundToInt((28f + slot * 8f + rank * 6f) * damageMultiplier * (1f + skillRanks[6] * 0.04f));
+        yield return FlyArrow(origin, destination, speed, target, damage);
+        yield return new WaitForSeconds(slot == 2 ? 0.08f : 0.16f);
+    }
+
+    private CombatantHealth FindArrowTarget()
+    {
+        if (lockOn != null && lockOn.IsLockedOn && lockOn.CurrentTarget != null)
+            return lockOn.CurrentTarget.GetComponent<CombatantHealth>();
+
+        CombatantHealth best = null;
+        float bestScore = float.MaxValue;
+        foreach (CombatantHealth candidate in FindObjectsByType<CombatantHealth>(FindObjectsSortMode.None))
+        {
+            if (candidate == null || candidate.gameObject == gameObject || candidate.IsDead || !candidate.gameObject.activeInHierarchy)
+                continue;
+            Vector3 delta = candidate.transform.position - transform.position;
+            float angle = Vector3.Angle(transform.forward, delta);
+            if (delta.magnitude > 24f || angle > 35f)
+                continue;
+            float score = delta.magnitude + angle * 0.08f;
+            if (score < bestScore)
+            {
+                best = candidate;
+                bestScore = score;
+            }
+        }
+        return best;
+    }
+
+    private IEnumerator FlyArrow(Vector3 origin, Vector3 destination, float speed, CombatantHealth target, int damage)
+    {
+        GameObject arrow = arrowPrefab != null ? Instantiate(arrowPrefab) : GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        arrow.name = "Player Arrow";
+        arrow.transform.position = origin;
+        arrow.transform.localScale = arrowPrefab != null ? Vector3.one : new Vector3(0.025f, 0.32f, 0.025f);
+        Vector3 direction = (destination - origin).normalized;
+        arrow.transform.rotation = Quaternion.LookRotation(direction, Vector3.up) * Quaternion.Euler(90f, 0f, 0f);
+
+        float distance = Vector3.Distance(origin, destination);
+        float duration = distance / Mathf.Max(1f, speed);
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            arrow.transform.position = Vector3.Lerp(origin, destination, t);
+            yield return null;
+        }
+
+        if (target != null && !target.IsDead)
+        {
+            target.TakeDamage(Mathf.Max(1, damage));
+            GameAudioManager.Instance.PlayWeaponHit();
+        }
+        Destroy(arrow);
     }
 
     private IEnumerator DualSwordSkill(int slot, int rank)
@@ -732,15 +817,14 @@ public sealed class PlayerCombat : MonoBehaviour
         switch (weaponClass)
         {
             case PlayerWeaponClass.Greatsword: return 1f + skillRanks[5] * 0.04f;
-            case PlayerWeaponClass.DualSwords: return 1f + skillRanks[6] * 0.02f;
-            case PlayerWeaponClass.Spear: return 1f + skillRanks[7] * 0.03f;
+            case PlayerWeaponClass.Bow: return 1f + skillRanks[8] * 0.03f;
             default: return 1f;
         }
     }
 
     private float PassiveRangeBonus()
     {
-        return weaponClass == PlayerWeaponClass.Spear ? skillRanks[5] * 0.10f : 0f;
+        return 0f;
     }
 
     private void FaceLockedTarget()

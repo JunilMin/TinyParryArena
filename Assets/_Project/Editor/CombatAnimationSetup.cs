@@ -8,12 +8,14 @@ using UnityEngine;
 public static class CombatAnimationSetup
 {
     private const string SourceRoot = "Assets/_Project/Art/Animations/Combat";
+    private const string KayKitMeleePath = "Assets/_Project/Art/Animations/KayKit/Rig_Medium_CombatMelee.fbx";
+    private const string KayKitRangedPath = "Assets/_Project/Art/Animations/KayKit/Rig_Medium_CombatRanged.fbx";
     private const string OutputRoot = "Assets/_Project/Resources/Animations";
     private const string PlayerControllerPath = OutputRoot + "/PlayerCombat.controller";
     private const string BossControllerPath = OutputRoot + "/BossCombat.controller";
     private const string PlayerModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Knight.fbx";
     private const string BossModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Barbarian.fbx";
-    private const string ControllerSchema = "restored-greatsword-animation-v4";
+    private const string ControllerSchema = "greatsword-bow-animation-v5";
     private static bool running;
 
     static CombatAnimationSetup() => EditorApplication.delayCall += SetupIfNeeded;
@@ -43,6 +45,8 @@ public static class CombatAnimationSetup
                 string path = rawPath.Replace('\\', '/');
                 ConfigureImporter(path);
             }
+            ConfigureImporter(KayKitMeleePath);
+            ConfigureImporter(KayKitRangedPath);
 
             AssetDatabase.Refresh();
             AssetDatabase.DeleteAsset(PlayerControllerPath);
@@ -135,6 +139,10 @@ public static class CombatAnimationSetup
         AddAction(machine, locomotion, "Dodge Left", "DodgeLeft", "Dodge_Left", 0.04f, true);
         AddAction(machine, locomotion, "Dodge Right", "DodgeRight", "Dodge_Right", 0.04f, true);
         AddAction(machine, locomotion, "Death", "Death", "GreatSword_Death", 0.08f, false);
+        AddDirectState(machine, locomotion, "Bow Attack 1", LoadNamedClip(KayKitMeleePath, "Melee_1H_Attack_Slice_Horizontal"), 0.48f);
+        AddDirectState(machine, locomotion, "Bow Attack 2", LoadNamedClip(KayKitMeleePath, "Melee_1H_Attack_Slice_Diagonal"), 0.52f);
+        AddDirectState(machine, locomotion, "Bow Attack 3", LoadNamedClip(KayKitMeleePath, "Melee_1H_Attack_Chop"), 0.58f);
+        AddDirectState(machine, locomotion, "Bow Shot", LoadNamedClip(KayKitRangedPath, "Ranged_Bow_Release"), 0.52f);
         AssetImporter importer = AssetImporter.GetAtPath(path);
         importer.userData = ControllerSchema;
         importer.SaveAndReimport();
@@ -159,6 +167,18 @@ public static class CombatAnimationSetup
         exit.duration = 0.1f;
     }
 
+    private static void AddDirectState(AnimatorStateMachine machine, AnimatorState locomotion, string stateName, AnimationClip clip, float targetDuration)
+    {
+        AnimatorState state = machine.AddState(stateName);
+        state.motion = clip;
+        state.speed = Mathf.Max(0.01f, clip.length / targetDuration);
+        state.writeDefaultValues = true;
+        AnimatorStateTransition exit = state.AddTransition(locomotion);
+        exit.hasExitTime = true;
+        exit.exitTime = 0.92f;
+        exit.duration = 0.06f;
+    }
+
     private static AnimationClip LoadClip(string fileName)
     {
         string path = SourceRoot + "/" + fileName + ".fbx";
@@ -166,5 +186,13 @@ public static class CombatAnimationSetup
             if (asset is AnimationClip clip && !clip.name.StartsWith("__preview__", StringComparison.Ordinal))
                 return clip;
         throw new InvalidOperationException("Animation clip not found: " + path);
+    }
+
+    private static AnimationClip LoadNamedClip(string path, string clipName)
+    {
+        foreach (UnityEngine.Object asset in AssetDatabase.LoadAllAssetsAtPath(path))
+            if (asset is AnimationClip clip && string.Equals(clip.name, clipName, StringComparison.OrdinalIgnoreCase))
+                return clip;
+        throw new InvalidOperationException("Animation clip not found: " + path + " / " + clipName);
     }
 }

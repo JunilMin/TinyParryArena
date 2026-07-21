@@ -107,8 +107,7 @@ public sealed class TinyParryStageManager : MonoBehaviour
                 break;
             case GameState.ClassSelection:
                 if (NumberPressed(1)) ChooseClass(PlayerWeaponClass.Greatsword);
-                else if (NumberPressed(2)) ChooseClass(PlayerWeaponClass.DualSwords);
-                else if (NumberPressed(3)) ChooseClass(PlayerWeaponClass.Spear);
+                else if (NumberPressed(2)) ChooseClass(PlayerWeaponClass.Bow);
                 break;
             case GameState.Resting:
                 HandleRestMenu();
