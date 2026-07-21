@@ -49,6 +49,7 @@ public sealed class CharacterVisualController : MonoBehaviour
     private static readonly int BowAttack3StateHash = Animator.StringToHash("Base Layer.Bow Attack 3");
     private static readonly int BowShotStateHash = Animator.StringToHash("Base Layer.Bow Shot");
     private static readonly int BlockStateHash = Animator.StringToHash("Base Layer.Block");
+    private static readonly int InstantGuardStateHash = Animator.StringToHash("Base Layer.Instant Guard");
 
     public bool UsesAuthoredAnimations => animator != null && animator.runtimeAnimatorController != null;
 
@@ -263,7 +264,7 @@ public sealed class CharacterVisualController : MonoBehaviour
             ResetActionTriggers();
             // Enter the established guard pose immediately. The gameplay parry
             // window already starts on the same input frame in PlayerCombat.
-            animator.Play(BlockStateHash, 0, 0.22f);
+            animator.Play(InstantGuardStateHash, 0, 0.35f);
             animator.Update(0f);
         }
         else StartAction(ActionPose(new Vector3(-18f, -10f, 42f), 0.08f, 0.16f, 0.11f));

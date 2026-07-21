@@ -93,7 +93,7 @@ public sealed class PlayerCombat : MonoBehaviour
         visual?.SetWeaponClass(value);
         WeaponBodyClearance clearance = weaponPivot != null ? weaponPivot.GetComponent<WeaponBodyClearance>() : null;
         if (clearance != null)
-            clearance.SetClearance(value == PlayerWeaponClass.Bow ? 0.42f : 0.30f);
+            clearance.SetClearance(value == PlayerWeaponClass.Bow ? 0.54f : 0.48f);
 
         // The hand roots remain the animation pivots. Parry works with the greatsword blade, crossed swords, or spear shaft.
         if (weaponPivot != null) weaponPivot.localScale = Vector3.one;
@@ -139,7 +139,7 @@ public sealed class PlayerCombat : MonoBehaviour
 
         bowModel = Instantiate(prefab, weaponPivot, false);
         bowModel.name = "Player Bow";
-        bowModel.transform.localPosition = new Vector3(0.18f, 0.02f, 0.14f);
+        bowModel.transform.localPosition = new Vector3(0.30f, 0.02f, 0.22f);
         bowModel.transform.localRotation = Quaternion.identity;
         bowModel.transform.localScale = Vector3.one * 1.25f;
         bowModel.SetActive(false);
@@ -846,6 +846,10 @@ public sealed class PlayerCombat : MonoBehaviour
         CombatantHealth[] targets =
             FindObjectsByType<CombatantHealth>(FindObjectsSortMode.None);
 
+        CombatantHealth lockedHealth = null;
+        if (lockOn != null && lockOn.IsLockedOn && lockOn.CurrentTarget != null)
+            lockedHealth = lockOn.CurrentTarget.GetComponentInParent<CombatantHealth>();
+
         CombatantHealth best = null;
         float nearest = float.MaxValue;
 
@@ -856,18 +860,24 @@ public sealed class PlayerCombat : MonoBehaviour
                 !target.gameObject.activeInHierarchy)
                 continue;
 
-            Vector3 delta = target.transform.position - transform.position;
+            Vector3 origin = transform.position + Vector3.up * 0.9f;
+            Vector3 targetPoint = target.transform.position;
+            Collider targetCollider = target.GetComponentInChildren<Collider>();
+            if (targetCollider != null)
+                targetPoint = targetCollider.ClosestPoint(origin);
+
+            Vector3 delta = targetPoint - origin;
             delta.y = 0f;
             float distance = delta.magnitude;
 
-            if (distance > attackRange + PassiveRangeBonus())
+            bool isLockedTarget = lockedHealth == target;
+            float effectiveRange = attackRange + PassiveRangeBonus() + (isLockedTarget ? 0.75f : 0f);
+
+            if (distance > effectiveRange)
                 continue;
 
             Vector3 attackForward = transform.forward;
             attackForward.y = 0f;
-            bool isLockedTarget = lockOn != null &&
-                                  lockOn.IsLockedOn &&
-                                  lockOn.CurrentTarget == target.transform;
             if (!isLockedTarget &&
                 delta.sqrMagnitude > 0.001f &&
                 Vector3.Angle(attackForward.normalized, delta.normalized) > attackAngle * 0.5f)
