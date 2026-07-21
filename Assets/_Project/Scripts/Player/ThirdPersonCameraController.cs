@@ -23,9 +23,9 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
     [SerializeField, Min(2f)] private float lockOnDistance = 3.7f;
     [SerializeField, Min(0.5f)] private float lockOnPivotHeight = 1.45f;
     [SerializeField, Range(-5f, 35f)] private float lockOnCameraPitch = 15f;
-    [SerializeField, Range(-3f, 3f)] private float lockOnShoulderOffset = 0.85f;
-    [SerializeField, Range(-20f, 20f)] private float lockOnOrbitAngle = 9f;
-    [SerializeField, Range(0.4f, 0.8f)] private float lockOnFocusBias = 0.72f;
+    [SerializeField, Range(-3f, 3f)] private float lockOnShoulderOffset = 0.8f;
+    [SerializeField, Range(-20f, 20f)] private float lockOnOrbitAngle = -12f;
+    [SerializeField, Range(0.4f, 0.8f)] private float lockOnFocusBias = 0.78f;
     [SerializeField, Min(0f)] private float lockOnDistancePerMeter = 0.12f;
     [SerializeField, Min(0f)] private float lockOnMaxDistanceExtension = 0.5f;
     [SerializeField, Min(0f)] private float lockOnDistanceExtensionStart = 4.5f;
@@ -72,9 +72,9 @@ public sealed class ThirdPersonCameraController : MonoBehaviour
         lockOnDistance = 3.7f;
         lockOnPivotHeight = 1.45f;
         lockOnCameraPitch = 15f;
-        lockOnShoulderOffset = 0.85f;
-        lockOnOrbitAngle = 9f;
-        lockOnFocusBias = 0.72f;
+        lockOnShoulderOffset = 0.8f;
+        lockOnOrbitAngle = -12f;
+        lockOnFocusBias = 0.78f;
         lockOnDistancePerMeter = 0.12f;
         lockOnMaxDistanceExtension = 0.5f;
         lockOnDistanceExtensionStart = 4.5f;

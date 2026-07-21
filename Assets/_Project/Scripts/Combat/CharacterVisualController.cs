@@ -40,6 +40,9 @@ public sealed class CharacterVisualController : MonoBehaviour
     private static readonly int DodgeBackwardHash = Animator.StringToHash("DodgeBackward");
     private static readonly int DodgeLeftHash = Animator.StringToHash("DodgeLeft");
     private static readonly int DodgeRightHash = Animator.StringToHash("DodgeRight");
+    private static readonly int Attack1StateHash = Animator.StringToHash("Base Layer.Attack 1");
+    private static readonly int Attack2StateHash = Animator.StringToHash("Base Layer.Attack 2");
+    private static readonly int Attack3StateHash = Animator.StringToHash("Base Layer.Attack 3");
 
     public bool UsesAuthoredAnimations => animator != null && animator.runtimeAnimatorController != null;
 
@@ -48,9 +51,9 @@ public sealed class CharacterVisualController : MonoBehaviour
         if (!UsesAuthoredAnimations) return -1f;
         switch (Math.Abs(combo) % 3)
         {
-            case 0: return 0.48f;
-            case 1: return 0.58f;
-            default: return 0.68f;
+            case 0: return 0.56f;
+            case 1: return 0.66f;
+            default: return 0.72f;
         }
     }
 
@@ -193,10 +196,29 @@ public sealed class CharacterVisualController : MonoBehaviour
     {
         if (UsesAuthoredAnimations)
         {
-            animator.SetTrigger(Animator.StringToHash("Attack" + (Math.Abs(combo) % 3 + 1)));
+            int attack = Math.Abs(combo) % 3;
+            ResetActionTriggers();
+            animator.CrossFadeInFixedTime(
+                attack == 0 ? Attack1StateHash : attack == 1 ? Attack2StateHash : Attack3StateHash,
+                0.04f,
+                0,
+                0f);
             return;
         }
         StartAction(AttackPose(combo, intensity));
+    }
+
+    private void ResetActionTriggers()
+    {
+        animator.ResetTrigger("Attack1");
+        animator.ResetTrigger("Attack2");
+        animator.ResetTrigger("Attack3");
+        animator.ResetTrigger(BlockHash);
+        animator.ResetTrigger(HitHash);
+        animator.ResetTrigger(DodgeForwardHash);
+        animator.ResetTrigger(DodgeBackwardHash);
+        animator.ResetTrigger(DodgeLeftHash);
+        animator.ResetTrigger(DodgeRightHash);
     }
     public void PlayTelegraph(int combo, float duration, float intensity = 1.45f)
     {

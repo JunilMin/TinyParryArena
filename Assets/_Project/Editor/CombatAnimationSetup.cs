@@ -7,13 +7,17 @@ using UnityEngine;
 [InitializeOnLoad]
 public static class CombatAnimationSetup
 {
-    private const string SourceRoot = "Assets/_Project/Art/Animations/Combat";
+    private const string SourceRoot = "Assets/_Project/Art/Animations/KayKit";
+    private const string MeleeFile = "Rig_Medium_CombatMelee";
+    private const string GeneralFile = "Rig_Medium_General";
+    private const string MovementBasicFile = "Rig_Medium_MovementBasic";
+    private const string MovementAdvancedFile = "Rig_Medium_MovementAdvanced";
     private const string OutputRoot = "Assets/_Project/Resources/Animations";
     private const string PlayerControllerPath = OutputRoot + "/PlayerCombat.controller";
     private const string BossControllerPath = OutputRoot + "/BossCombat.controller";
     private const string PlayerModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Knight.fbx";
     private const string BossModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Barbarian.fbx";
-    private const string ControllerSchema = "combat-animation-v2";
+    private const string ControllerSchema = "kaykit-wide-greatsword-animation-v3";
     private static bool running;
 
     static CombatAnimationSetup() => EditorApplication.delayCall += SetupIfNeeded;
@@ -41,7 +45,7 @@ public static class CombatAnimationSetup
             foreach (string rawPath in paths)
             {
                 string path = rawPath.Replace('\\', '/');
-                ConfigureImporter(path, IsLooping(path));
+                ConfigureImporter(path);
             }
 
             AssetDatabase.Refresh();
@@ -67,26 +71,26 @@ public static class CombatAnimationSetup
     private static void ConfigureCharacterRig(string path)
     {
         ModelImporter importer = AssetImporter.GetAtPath(path) as ModelImporter;
-        if (importer == null ||
-            (importer.animationType == ModelImporterAnimationType.Human &&
-             importer.avatarSetup == ModelImporterAvatarSetup.CreateFromThisModel)) return;
+        if (importer == null || importer.animationType == ModelImporterAnimationType.Generic) return;
 
-        importer.animationType = ModelImporterAnimationType.Human;
-        importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+        // KayKit characters and Rig_Medium clips share one native skeleton.
+        // Generic keeps the authored arm and weapon arcs intact; Humanoid
+        // retargeting distorts the proportions of these stylized characters.
+        importer.animationType = ModelImporterAnimationType.Generic;
         importer.SaveAndReimport();
     }
 
-    private static void ConfigureImporter(string path, bool loop)
+    private static void ConfigureImporter(string path)
     {
         ModelImporter importer = AssetImporter.GetAtPath(path) as ModelImporter;
         if (importer == null) return;
-        importer.animationType = ModelImporterAnimationType.Human;
-        importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+        importer.animationType = ModelImporterAnimationType.Generic;
         importer.importAnimation = true;
 
         ModelImporterClipAnimation[] clips = importer.defaultClipAnimations;
         foreach (ModelImporterClipAnimation clip in clips)
         {
+            bool loop = IsLoopingClip(clip.name);
             clip.loopTime = loop;
             clip.loopPose = loop;
             clip.lockRootHeightY = true;
@@ -100,10 +104,11 @@ public static class CombatAnimationSetup
         importer.SaveAndReimport();
     }
 
-    private static bool IsLooping(string path) =>
-        path.IndexOf("Idle", StringComparison.OrdinalIgnoreCase) >= 0 ||
-        path.IndexOf("Walk", StringComparison.OrdinalIgnoreCase) >= 0 ||
-        path.IndexOf("Run", StringComparison.OrdinalIgnoreCase) >= 0;
+    private static bool IsLoopingClip(string clipName) =>
+        clipName.IndexOf("Idle", StringComparison.OrdinalIgnoreCase) >= 0 ||
+        clipName.IndexOf("Walking", StringComparison.OrdinalIgnoreCase) >= 0 ||
+        clipName.IndexOf("Running", StringComparison.OrdinalIgnoreCase) >= 0 ||
+        string.Equals(clipName, "Melee_Blocking", StringComparison.OrdinalIgnoreCase);
 
     private static void CreateController(string path)
     {
@@ -117,32 +122,34 @@ public static class CombatAnimationSetup
         AnimatorState locomotion = machine.AddState("Locomotion");
         BlendTree tree = new BlendTree { name = "Locomotion", blendParameter = "Speed", useAutomaticThresholds = false };
         AssetDatabase.AddObjectToAsset(tree, controller);
-        tree.AddChild(LoadClip("GreatSword_Idle"), 0f);
-        tree.AddChild(LoadClip("GreatSword_Walk"), 2.4f);
-        tree.AddChild(LoadClip("GreatSword_Run"), 5.5f);
+        tree.AddChild(LoadClip(MeleeFile, "Melee_2H_Idle"), 0f);
+        tree.AddChild(LoadClip(MovementBasicFile, "Walking_A"), 2.4f);
+        tree.AddChild(LoadClip(MovementBasicFile, "Running_A"), 5.5f);
         locomotion.motion = tree;
         machine.defaultState = locomotion;
 
-        AddAction(machine, locomotion, "Attack 1", "Attack1", "GreatSword_Attack01", 0.06f, true, 0.82f);
-        AddAction(machine, locomotion, "Attack 2", "Attack2", "GreatSword_Attack02", 0.06f, true, 0.98f);
-        AddAction(machine, locomotion, "Attack 3", "Attack3", "GreatSword_Attack03", 0.06f, true, 1.12f);
-        AddAction(machine, locomotion, "Block", "Block", "GreatSword_Block", 0.05f, true);
-        AddAction(machine, locomotion, "Hit", "Hit", "GreatSword_Hit", 0.04f, true);
-        AddAction(machine, locomotion, "Dodge Forward", "DodgeForward", "Dodge_Forward", 0.04f, true);
-        AddAction(machine, locomotion, "Dodge Backward", "DodgeBackward", "Dodge_Backward", 0.04f, true);
-        AddAction(machine, locomotion, "Dodge Left", "DodgeLeft", "Dodge_Left", 0.04f, true);
-        AddAction(machine, locomotion, "Dodge Right", "DodgeRight", "Dodge_Right", 0.04f, true);
-        AddAction(machine, locomotion, "Death", "Death", "GreatSword_Death", 0.08f, false);
+        // Use the broadest authored 2H motions so each strike reads clearly
+        // from the combat camera instead of looking like a compact hand flick.
+        AddAction(machine, locomotion, "Attack 1", "Attack1", MeleeFile, "Melee_2H_Attack_Spin", 0.05f, true, 0.98f);
+        AddAction(machine, locomotion, "Attack 2", "Attack2", MeleeFile, "Melee_2H_Attack_Spinning", 0.05f, true, 1.12f);
+        AddAction(machine, locomotion, "Attack 3", "Attack3", MeleeFile, "Melee_2H_Attack_Chop", 0.05f, true, 1.08f);
+        AddAction(machine, locomotion, "Block", "Block", MeleeFile, "Melee_Block", 0.04f, true);
+        AddAction(machine, locomotion, "Hit", "Hit", GeneralFile, "Hit_A", 0.03f, true);
+        AddAction(machine, locomotion, "Dodge Forward", "DodgeForward", MovementAdvancedFile, "Dodge_Forward", 0.03f, true);
+        AddAction(machine, locomotion, "Dodge Backward", "DodgeBackward", MovementAdvancedFile, "Dodge_Backward", 0.03f, true);
+        AddAction(machine, locomotion, "Dodge Left", "DodgeLeft", MovementAdvancedFile, "Dodge_Left", 0.03f, true);
+        AddAction(machine, locomotion, "Dodge Right", "DodgeRight", MovementAdvancedFile, "Dodge_Right", 0.03f, true);
+        AddAction(machine, locomotion, "Death", "Death", GeneralFile, "Death_A", 0.06f, false);
         AssetImporter importer = AssetImporter.GetAtPath(path);
         importer.userData = ControllerSchema;
         importer.SaveAndReimport();
     }
 
     private static void AddAction(AnimatorStateMachine machine, AnimatorState locomotion, string stateName,
-        string trigger, string clipName, float duration, bool returns, float targetDuration = 0f)
+        string trigger, string fileName, string clipName, float duration, bool returns, float targetDuration = 0f)
     {
         AnimatorState state = machine.AddState(stateName);
-        state.motion = LoadClip(clipName);
+        state.motion = LoadClip(fileName, clipName);
         if (targetDuration > 0f && state.motion is AnimationClip clip)
             state.speed = Mathf.Max(0.01f, clip.length / targetDuration);
         AnimatorStateTransition enter = machine.AddAnyStateTransition(state);
@@ -157,12 +164,12 @@ public static class CombatAnimationSetup
         exit.duration = 0.1f;
     }
 
-    private static AnimationClip LoadClip(string fileName)
+    private static AnimationClip LoadClip(string fileName, string clipName)
     {
         string path = SourceRoot + "/" + fileName + ".fbx";
         foreach (UnityEngine.Object asset in AssetDatabase.LoadAllAssetsAtPath(path))
-            if (asset is AnimationClip clip && !clip.name.StartsWith("__preview__", StringComparison.Ordinal))
+            if (asset is AnimationClip clip && string.Equals(clip.name, clipName, StringComparison.OrdinalIgnoreCase))
                 return clip;
-        throw new InvalidOperationException("Animation clip not found: " + path);
+        throw new InvalidOperationException("Animation clip not found: " + path + " / " + clipName);
     }
 }

@@ -42,8 +42,6 @@ public static class PlayerCharacterVisualBootstrap
         animator = replacement.GetComponentInChildren<Animator>(true);
         ReparentEquipment(rightEquipment, FindHand(animator, replacement.transform, true));
         ReparentEquipment(leftEquipment, FindHand(animator, replacement.transform, false));
-        if (rightEquipment != null)
-            rightEquipment.position += character.transform.right * 0.09f + character.transform.forward * 0.04f;
 
         foreach (Collider childCollider in replacement.GetComponentsInChildren<Collider>(true))
             UnityEngine.Object.Destroy(childCollider);
