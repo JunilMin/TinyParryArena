@@ -17,7 +17,7 @@ public static class CombatAnimationSetup
     private const string BossControllerPath = OutputRoot + "/BossCombat.controller";
     private const string PlayerModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Knight.fbx";
     private const string BossModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Barbarian.fbx";
-    private const string ControllerSchema = "kaykit-combat-animation-v1";
+    private const string ControllerSchema = "kaykit-generic-combat-animation-v2";
     private static bool running;
 
     static CombatAnimationSetup() => EditorApplication.delayCall += SetupIfNeeded;
@@ -71,12 +71,12 @@ public static class CombatAnimationSetup
     private static void ConfigureCharacterRig(string path)
     {
         ModelImporter importer = AssetImporter.GetAtPath(path) as ModelImporter;
-        if (importer == null ||
-            (importer.animationType == ModelImporterAnimationType.Human &&
-             importer.avatarSetup == ModelImporterAvatarSetup.CreateFromThisModel)) return;
+        if (importer == null || importer.animationType == ModelImporterAnimationType.Generic) return;
 
-        importer.animationType = ModelImporterAnimationType.Human;
-        importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+        // KayKit characters and Rig_Medium clips share one native skeleton.
+        // Generic keeps the authored arm and weapon arcs intact; Humanoid
+        // retargeting distorts the proportions of these stylized characters.
+        importer.animationType = ModelImporterAnimationType.Generic;
         importer.SaveAndReimport();
     }
 
@@ -84,8 +84,7 @@ public static class CombatAnimationSetup
     {
         ModelImporter importer = AssetImporter.GetAtPath(path) as ModelImporter;
         if (importer == null) return;
-        importer.animationType = ModelImporterAnimationType.Human;
-        importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+        importer.animationType = ModelImporterAnimationType.Generic;
         importer.importAnimation = true;
 
         ModelImporterClipAnimation[] clips = importer.defaultClipAnimations;
