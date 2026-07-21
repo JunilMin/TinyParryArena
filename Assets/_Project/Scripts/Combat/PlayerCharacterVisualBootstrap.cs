@@ -50,6 +50,12 @@ public static class PlayerCharacterVisualBootstrap
             oldVisual.gameObject.SetActive(false);
 
         if (animator != null) animator.applyRootMotion = false;
+        if (animator != null)
+        {
+            string controllerPath = isPlayer ? "Animations/PlayerCombat" : "Animations/BossCombat";
+            RuntimeAnimatorController controller = Resources.Load<RuntimeAnimatorController>(controllerPath);
+            if (controller != null) animator.runtimeAnimatorController = controller;
+        }
         visualRoot = replacement.transform;
         return true;
     }

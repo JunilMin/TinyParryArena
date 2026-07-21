@@ -35,6 +35,13 @@ public sealed class CharacterVisualController : MonoBehaviour
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
     private static readonly int HitHash = Animator.StringToHash("Hit");
     private static readonly int DeathHash = Animator.StringToHash("Death");
+    private static readonly int BlockHash = Animator.StringToHash("Block");
+    private static readonly int DodgeForwardHash = Animator.StringToHash("DodgeForward");
+    private static readonly int DodgeBackwardHash = Animator.StringToHash("DodgeBackward");
+    private static readonly int DodgeLeftHash = Animator.StringToHash("DodgeLeft");
+    private static readonly int DodgeRightHash = Animator.StringToHash("DodgeRight");
+
+    public bool UsesAuthoredAnimations => animator != null && animator.runtimeAnimatorController != null;
 
     private void Awake()
     {
@@ -120,7 +127,7 @@ public sealed class CharacterVisualController : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (!dead) ApplyProceduralStance();
+        if (!dead && !UsesAuthoredAnimations) ApplyProceduralStance();
     }
 
     private void ApplyProceduralStance()
@@ -170,26 +177,51 @@ public sealed class CharacterVisualController : MonoBehaviour
         upper.rotation = Quaternion.FromToRotation(current.normalized, desired) * upper.rotation;
     }
 
-    public void PlayAttack(int combo) => StartAction(AttackPose(combo, 1f));
-    public void PlayAttack(int combo, float intensity) => StartAction(AttackPose(combo, intensity));
+    public void PlayAttack(int combo) => PlayAttack(combo, 1f);
+    public void PlayAttack(int combo, float intensity)
+    {
+        if (UsesAuthoredAnimations)
+        {
+            animator.SetTrigger(Animator.StringToHash("Attack" + (Math.Abs(combo) % 3 + 1)));
+            return;
+        }
+        StartAction(AttackPose(combo, intensity));
+    }
     public void PlayTelegraph(int combo, float duration, float intensity = 1.45f)
     {
+        if (UsesAuthoredAnimations) return;
         Vector3 pose = combo == 0 ? new Vector3(-72f, -18f, 58f)
             : combo == 1 ? new Vector3(-22f, -88f, 70f)
             : new Vector3(-34f, 12f, 86f);
         StartAction(ActionPose(pose * intensity, Mathf.Min(0.16f, duration * 0.35f), Mathf.Max(0.08f, duration * 0.45f), Mathf.Min(0.16f, duration * 0.20f)));
     }
-    public void PlayParry() => StartAction(ActionPose(new Vector3(-18f, -10f, 42f), 0.08f, 0.16f, 0.11f));
+    public void PlayParry()
+    {
+        if (UsesAuthoredAnimations) animator.SetTrigger(BlockHash);
+        else StartAction(ActionPose(new Vector3(-18f, -10f, 42f), 0.08f, 0.16f, 0.11f));
+    }
+    public void PlayDodge(Vector3 localDirection)
+    {
+        if (!UsesAuthoredAnimations) return;
+        if (Mathf.Abs(localDirection.x) > Mathf.Abs(localDirection.z))
+            animator.SetTrigger(localDirection.x >= 0f ? DodgeRightHash : DodgeLeftHash);
+        else
+            animator.SetTrigger(localDirection.z >= 0f ? DodgeForwardHash : DodgeBackwardHash);
+    }
     public void PlayDrink() => StartAction(ActionPose(new Vector3(-40f, 0f, 20f), 0.12f, 0.35f, 0.18f));
 
     public void PlayHit()
     {
         if (animator != null && animator.runtimeAnimatorController != null) animator.SetTrigger(HitHash);
+        if (UsesAuthoredAnimations) return;
         StartAction(ActionPose(new Vector3(-12f, 0f, 25f), 0.06f, 0.16f, 0.12f));
     }
 
-    public void PlayStagger(float duration = 1.5f) =>
-        StartAction(ActionPose(new Vector3(28f, 0f, -20f), 0.09f, Mathf.Max(0.1f, duration - 0.22f), 0.13f));
+    public void PlayStagger(float duration = 1.5f)
+    {
+        if (UsesAuthoredAnimations) animator.SetTrigger(HitHash);
+        else StartAction(ActionPose(new Vector3(28f, 0f, -20f), 0.09f, Mathf.Max(0.1f, duration - 0.22f), 0.13f));
+    }
 
     public void PlayDeath()
     {
@@ -200,6 +232,7 @@ public sealed class CharacterVisualController : MonoBehaviour
         actionWeight = 0f;
         actionEuler = Vector3.zero;
         if (animator != null && animator.runtimeAnimatorController != null) animator.SetTrigger(DeathHash);
+        if (UsesAuthoredAnimations) return;
         StartCoroutine(DeathRoutine());
     }
 

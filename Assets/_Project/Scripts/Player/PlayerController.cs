@@ -25,6 +25,7 @@ public sealed class PlayerController : MonoBehaviour
     private CharacterController controller;
     private CombatantHealth health;
     private PlayerLockOn lockOn;
+    private CharacterVisualController visual;
     private float verticalVelocity;
     private bool controlsEnabled = true;
     private bool dashing;
@@ -40,6 +41,7 @@ public sealed class PlayerController : MonoBehaviour
         controller = GetComponent<CharacterController>();
         health = GetComponent<CombatantHealth>();
         lockOn = GetComponent<PlayerLockOn>();
+        visual = GetComponent<CharacterVisualController>();
     }
 
     private void Start()
@@ -105,6 +107,7 @@ public sealed class PlayerController : MonoBehaviour
         direction.y = 0f;
         if (direction.sqrMagnitude < 0.001f) direction = lastMoveDirection;
         direction.Normalize();
+        if (visual != null) visual.PlayDodge(transform.InverseTransformDirection(direction));
         transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
 
         health.SetInvincible(true);
