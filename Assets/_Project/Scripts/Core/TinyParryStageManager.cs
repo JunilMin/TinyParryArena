@@ -289,14 +289,16 @@ public sealed class TinyParryStageManager : MonoBehaviour
         if (LetterPressed('h')) changed = progression != null && progression.SpendStatPoint(0);
         else if (LetterPressed('a')) changed = progression != null && progression.SpendStatPoint(1);
         else if (LetterPressed('s')) changed = progression != null && progression.SpendStatPoint(2);
-        else if (TabPressed()) { hud?.ToggleRestSkillCategory(); changed = true; }
         else
         {
-            for (int number = 1; number <= 5 && !changed; number++)
+            bool refund = ShiftHeld();
+            for (int slot = 0; slot < PlayerProgression.TotalSkillCount && !changed; slot++)
             {
+                int number = slot == 9 ? 0 : slot + 1;
                 if (!NumberPressed(number)) continue;
-                int slot = (hud != null && hud.RestShowingPassives ? PlayerProgression.ActiveSkillCount : 0) + number - 1;
-                changed = progression != null && progression.SpendSkillPoint(slot);
+                changed = progression != null && (refund
+                    ? progression.RefundSkillPoint(slot)
+                    : progression.SpendSkillPoint(slot));
             }
         }
 
@@ -483,11 +485,33 @@ public sealed class TinyParryStageManager : MonoBehaviour
     {
 #if ENABLE_INPUT_SYSTEM
         Keyboard k = Keyboard.current; if (k == null) return false;
-        if (number == 1) return k.digit1Key.wasPressedThisFrame || k.numpad1Key.wasPressedThisFrame;
-        if (number == 2) return k.digit2Key.wasPressedThisFrame || k.numpad2Key.wasPressedThisFrame;
-        return k.digit3Key.wasPressedThisFrame || k.numpad3Key.wasPressedThisFrame;
+        switch (number)
+        {
+            case 0: return k.digit0Key.wasPressedThisFrame || k.numpad0Key.wasPressedThisFrame;
+            case 1: return k.digit1Key.wasPressedThisFrame || k.numpad1Key.wasPressedThisFrame;
+            case 2: return k.digit2Key.wasPressedThisFrame || k.numpad2Key.wasPressedThisFrame;
+            case 3: return k.digit3Key.wasPressedThisFrame || k.numpad3Key.wasPressedThisFrame;
+            case 4: return k.digit4Key.wasPressedThisFrame || k.numpad4Key.wasPressedThisFrame;
+            case 5: return k.digit5Key.wasPressedThisFrame || k.numpad5Key.wasPressedThisFrame;
+            case 6: return k.digit6Key.wasPressedThisFrame || k.numpad6Key.wasPressedThisFrame;
+            case 7: return k.digit7Key.wasPressedThisFrame || k.numpad7Key.wasPressedThisFrame;
+            case 8: return k.digit8Key.wasPressedThisFrame || k.numpad8Key.wasPressedThisFrame;
+            case 9: return k.digit9Key.wasPressedThisFrame || k.numpad9Key.wasPressedThisFrame;
+            default: return false;
+        }
 #else
-        return Input.GetKeyDown(number == 1 ? KeyCode.Alpha1 : number == 2 ? KeyCode.Alpha2 : KeyCode.Alpha3);
+        if (number < 0 || number > 9) return false;
+        return Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha0 + number)) ||
+               Input.GetKeyDown((KeyCode)((int)KeyCode.Keypad0 + number));
+#endif
+    }
+    private static bool ShiftHeld()
+    {
+#if ENABLE_INPUT_SYSTEM
+        Keyboard k = Keyboard.current;
+        return k != null && (k.leftShiftKey.isPressed || k.rightShiftKey.isPressed);
+#else
+        return Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
 #endif
     }
     private static bool FunctionKeyPressed(int number)

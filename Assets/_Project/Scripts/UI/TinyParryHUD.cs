@@ -658,7 +658,7 @@ public sealed class TinyParryHUD : MonoBehaviour
             alignment = TextAnchor.MiddleCenter
         };
         string footer = restRoomProgression != null && restRoomProgression.HasChosenClass
-            ? "H/A/S STAT   1-5 ACTIVE   6-0 PASSIVE   ENTER CONTINUE"
+            ? "H/A/S STAT   1-5 ACTIVE   6-0 PASSIVE   SHIFT+NUMBER REFUND   ENTER CONTINUE"
             : "H / A / S  SPEND STAT     ENTER  CONTINUE";
         GUI.Label(new Rect(panel.x + margin, panel.yMax - 58f * scale, panel.width - margin * 2f, 38f * scale),
             footer, footerStyle);

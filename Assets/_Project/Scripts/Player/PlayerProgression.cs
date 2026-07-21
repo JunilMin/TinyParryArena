@@ -135,6 +135,27 @@ public sealed class PlayerProgression : MonoBehaviour
         return true;
     }
 
+    public bool RefundSkillPoint(int slot)
+    {
+        if (!HasChosenClass || slot < 0 || slot >= TotalSkillCount || learnedSkills[slot] <= 0)
+            return false;
+
+        // The first active skill starts with one free rank. It cannot be
+        // converted into a spendable point, preventing a respec exploit.
+        if (slot == 0 && learnedSkills[slot] == 1)
+            return false;
+
+        learnedSkills[slot]--;
+        skillPoints++;
+        if (slot == equippedActiveSkill && learnedSkills[slot] == 0)
+        {
+            equippedActiveSkill = 0;
+            combat.EquipActiveSkill(0);
+        }
+        ApplySkills();
+        return true;
+    }
+
     public int GetSkillRank(int slot) => slot >= 0 && slot < TotalSkillCount ? learnedSkills[slot] : 0;
     public bool IsSkillLearned(int slot) => GetSkillRank(slot) > 0;
 
