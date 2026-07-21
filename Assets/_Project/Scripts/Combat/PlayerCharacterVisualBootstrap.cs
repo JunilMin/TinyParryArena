@@ -48,6 +48,11 @@ public static class PlayerCharacterVisualBootstrap
             rightEquipment.position += character.transform.right * lateralOffset + character.transform.forward * 0.03f;
             if (isPlayer)
                 rightEquipment.Rotate(character.transform.forward, -22f, Space.World);
+
+            WeaponBodyClearance clearance = rightEquipment.GetComponent<WeaponBodyClearance>();
+            if (clearance == null)
+                clearance = rightEquipment.gameObject.AddComponent<WeaponBodyClearance>();
+            clearance.Configure(character.transform, isPlayer);
         }
 
         foreach (Collider childCollider in replacement.GetComponentsInChildren<Collider>(true))
