@@ -11,6 +11,8 @@ public static class CombatAnimationSetup
     private const string OutputRoot = "Assets/_Project/Resources/Animations";
     private const string PlayerControllerPath = OutputRoot + "/PlayerCombat.controller";
     private const string BossControllerPath = OutputRoot + "/BossCombat.controller";
+    private const string PlayerModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Knight.fbx";
+    private const string BossModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Barbarian.fbx";
     private static bool running;
 
     static CombatAnimationSetup() => EditorApplication.delayCall += SetupIfNeeded;
@@ -26,6 +28,8 @@ public static class CombatAnimationSetup
     private static void SetupIfNeeded()
     {
         if (running || EditorApplication.isPlayingOrWillChangePlaymode) return;
+        ConfigureCharacterRig(PlayerModelPath);
+        ConfigureCharacterRig(BossModelPath);
         if (AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(PlayerControllerPath) != null &&
             AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(BossControllerPath) != null) return;
 
@@ -50,6 +54,18 @@ public static class CombatAnimationSetup
         {
             running = false;
         }
+    }
+
+    private static void ConfigureCharacterRig(string path)
+    {
+        ModelImporter importer = AssetImporter.GetAtPath(path) as ModelImporter;
+        if (importer == null ||
+            (importer.animationType == ModelImporterAnimationType.Human &&
+             importer.avatarSetup == ModelImporterAvatarSetup.CreateFromThisModel)) return;
+
+        importer.animationType = ModelImporterAnimationType.Human;
+        importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+        importer.SaveAndReimport();
     }
 
     private static void ConfigureImporter(string path, bool loop)

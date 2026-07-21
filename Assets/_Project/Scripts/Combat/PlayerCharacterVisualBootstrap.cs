@@ -54,7 +54,10 @@ public static class PlayerCharacterVisualBootstrap
         {
             string controllerPath = isPlayer ? "Animations/PlayerCombat" : "Animations/BossCombat";
             RuntimeAnimatorController controller = Resources.Load<RuntimeAnimatorController>(controllerPath);
-            if (controller != null) animator.runtimeAnimatorController = controller;
+            if (controller != null && animator.isHuman)
+                animator.runtimeAnimatorController = controller;
+            else if (!animator.isHuman)
+                Debug.LogError(replacementName + " must use a Humanoid avatar for combat animation retargeting.");
         }
         visualRoot = replacement.transform;
         return true;
