@@ -644,6 +644,11 @@ public sealed class PlayerCombat : MonoBehaviour
         Quaternion toRotation,
         float duration)
     {
+        if (visual != null && visual.UsesAuthoredAnimations)
+        {
+            yield return new WaitForSeconds(duration);
+            yield break;
+        }
         if (weaponPivot == null)
         {
             yield return new WaitForSeconds(duration);
@@ -672,6 +677,11 @@ public sealed class PlayerCombat : MonoBehaviour
         Quaternion toRotation,
         float duration)
     {
+        if (visual != null && visual.UsesAuthoredAnimations)
+        {
+            yield return new WaitForSeconds(duration);
+            yield break;
+        }
         if (shieldPivot == null)
         {
             yield return new WaitForSeconds(duration);
