@@ -51,9 +51,9 @@ public sealed class CharacterVisualController : MonoBehaviour
         if (!UsesAuthoredAnimations) return -1f;
         switch (Math.Abs(combo) % 3)
         {
-            case 0: return 0.56f;
-            case 1: return 0.66f;
-            default: return 0.72f;
+            case 0: return 0.48f;
+            case 1: return 0.58f;
+            default: return 0.68f;
         }
     }
 
