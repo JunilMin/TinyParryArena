@@ -229,7 +229,7 @@ public static class TinyParryArenaBuilder
         sword.localPosition = new Vector3(0f, 0.02f, 0.08f);
         sword.localRotation = Quaternion.Euler(0f, 0f, 0f);
         bow.localScale = Vector3.one * 1.25f;
-        bow.localPosition = new Vector3(0f, 0.02f, 0.08f);
+        bow.localPosition = new Vector3(0.18f, 0.02f, 0.14f);
         bow.localRotation = Quaternion.identity;
         sword.gameObject.SetActive(true);
         shield.gameObject.SetActive(false);

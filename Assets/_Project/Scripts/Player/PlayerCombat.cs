@@ -91,6 +91,9 @@ public sealed class PlayerCombat : MonoBehaviour
         if (shieldModel != null) shieldModel.SetActive(false);
         if (bowModel != null) bowModel.SetActive(value == PlayerWeaponClass.Bow);
         visual?.SetWeaponClass(value);
+        WeaponBodyClearance clearance = weaponPivot != null ? weaponPivot.GetComponent<WeaponBodyClearance>() : null;
+        if (clearance != null)
+            clearance.SetClearance(value == PlayerWeaponClass.Bow ? 0.42f : 0.30f);
 
         // The hand roots remain the animation pivots. Parry works with the greatsword blade, crossed swords, or spear shaft.
         if (weaponPivot != null) weaponPivot.localScale = Vector3.one;
@@ -136,7 +139,7 @@ public sealed class PlayerCombat : MonoBehaviour
 
         bowModel = Instantiate(prefab, weaponPivot, false);
         bowModel.name = "Player Bow";
-        bowModel.transform.localPosition = new Vector3(0f, 0.02f, 0.08f);
+        bowModel.transform.localPosition = new Vector3(0.18f, 0.02f, 0.14f);
         bowModel.transform.localRotation = Quaternion.identity;
         bowModel.transform.localScale = Vector3.one * 1.25f;
         bowModel.SetActive(false);
@@ -510,7 +513,7 @@ public sealed class PlayerCombat : MonoBehaviour
         arrow.transform.position = origin;
         arrow.transform.localScale = arrowPrefab != null ? Vector3.one : new Vector3(0.025f, 0.32f, 0.025f);
         Vector3 direction = (destination - origin).normalized;
-        arrow.transform.rotation = Quaternion.LookRotation(direction, Vector3.up) * Quaternion.Euler(90f, 0f, 0f);
+        arrow.transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
 
         float distance = Vector3.Distance(origin, destination);
         float duration = distance / Mathf.Max(1f, speed);

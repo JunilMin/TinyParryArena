@@ -18,6 +18,8 @@ public sealed class WeaponBodyClearance : MonoBehaviour
         baseLocalPosition = transform.localPosition;
     }
 
+    public void SetClearance(float radius) => torsoRadius = Mathf.Max(0.05f, radius);
+
     private void Awake()
     {
         if (characterRoot == null)

@@ -38,6 +38,13 @@ public static class PlayerCharacterVisualBootstrap
         replacement.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
         replacement.transform.localScale = Vector3.one;
         FitToHeightAndGround(replacement, character.transform, targetHeight);
+        if (isPlayer)
+        {
+            CharacterGroundingConstraint grounding = replacement.GetComponent<CharacterGroundingConstraint>();
+            if (grounding == null)
+                grounding = replacement.AddComponent<CharacterGroundingConstraint>();
+            grounding.Configure(character.transform);
+        }
 
         animator = replacement.GetComponentInChildren<Animator>(true);
         ReparentEquipment(rightEquipment, FindHand(animator, replacement.transform, true));
