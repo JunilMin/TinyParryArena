@@ -14,3 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCharacterVisualConfig
   playerPrefab: {fileID: 919132149155446097, guid: 4c6cb531f7843c84c857ea21a497675a, type: 3}
   bossPrefab: {fileID: 919132149155446097, guid: d2f7157053b4e69429bc227205a97964, type: 3}
+  bossPrefabs:
+  - {fileID: 919132149155446097, guid: d2f7157053b4e69429bc227205a97964, type: 3}
+  - {fileID: 919132149155446097, guid: e27015efcb26a9940825a29741c77531, type: 3}
+  - {fileID: 919132149155446097, guid: edb9d7713bb5a1a4aa5119187061d5e9, type: 3}
+  - {fileID: 919132149155446097, guid: 5030d011c2538bc44b5cbdefad711b01, type: 3}
+  - {fileID: 919132149155446097, guid: 659b01af1c014f14cbfe0c405ef0073f, type: 3}

@@ -5,7 +5,7 @@ public sealed class WeaponBodyClearance : MonoBehaviour
 {
     [SerializeField] private Transform characterRoot;
     [SerializeField, Min(0.05f)] private float torsoRadius = 0.28f;
-    [SerializeField, Min(0f)] private float maximumCorrection = 0.32f;
+    [SerializeField, Min(0f)] private float maximumCorrection = 0.75f;
     [SerializeField, Min(1f)] private float correctionSpeed = 24f;
 
     private Vector3 baseLocalPosition;

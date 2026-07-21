@@ -15,10 +15,27 @@ public static class CombatAnimationSetup
     private const string BossControllerPath = OutputRoot + "/BossCombat.controller";
     private const string PlayerModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Knight.fbx";
     private const string BossModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Barbarian.fbx";
-    private const string ControllerSchema = "instant-guard-wide-bow-animation-v7";
+    private const string CharacterSetPath = "Assets/_Project/Resources/Characters/OriginalCharacterSet.asset";
+    private static readonly string[] BossModelPaths =
+    {
+        BossModelPath,
+        "Assets/ThirdParty/KayKit/Skeletons/Skeleton_Warrior.fbx",
+        "Assets/ThirdParty/KayKit/Skeletons/Skeleton_Rogue.fbx",
+        "Assets/ThirdParty/KayKit/Skeletons/Skeleton_Mage.fbx",
+        "Assets/ThirdParty/KayKit/Skeletons/Skeleton_Minion.fbx"
+    };
+    private const string ControllerSchema = "kaykit-boss-variants-v9";
     private static bool running;
 
-    static CombatAnimationSetup() => EditorApplication.delayCall += SetupIfNeeded;
+    static CombatAnimationSetup()
+    {
+        EditorApplication.delayCall += SetupIfNeeded;
+        EditorApplication.playModeStateChanged += state =>
+        {
+            if (state == PlayModeStateChange.EnteredEditMode)
+                EditorApplication.delayCall += SetupIfNeeded;
+        };
+    }
 
     [MenuItem("Tiny Parry Arena/Animations/Rebuild Combat Animators")]
     public static void Rebuild()
@@ -32,7 +49,9 @@ public static class CombatAnimationSetup
     {
         if (running || EditorApplication.isPlayingOrWillChangePlaymode) return;
         ConfigureCharacterRig(PlayerModelPath);
-        ConfigureCharacterRig(BossModelPath);
+        foreach (string bossModelPath in BossModelPaths)
+            ConfigureCharacterRig(bossModelPath);
+        ConfigureCharacterVisualSet();
         if (HasCurrentController(PlayerControllerPath) && HasCurrentController(BossControllerPath)) return;
 
         running = true;
@@ -60,6 +79,21 @@ public static class CombatAnimationSetup
         {
             running = false;
         }
+    }
+
+    private static void ConfigureCharacterVisualSet()
+    {
+        PlayerCharacterVisualConfig config = AssetDatabase.LoadAssetAtPath<PlayerCharacterVisualConfig>(CharacterSetPath);
+        if (config == null)
+            return;
+
+        GameObject[] variants = new GameObject[BossModelPaths.Length];
+        for (int i = 0; i < BossModelPaths.Length; i++)
+            variants[i] = AssetDatabase.LoadAssetAtPath<GameObject>(BossModelPaths[i]);
+
+        config.bossPrefab = variants[0];
+        config.bossPrefabs = variants;
+        EditorUtility.SetDirty(config);
     }
 
     private static bool HasCurrentController(string path)
@@ -133,15 +167,16 @@ public static class CombatAnimationSetup
         AddAction(machine, locomotion, "Attack 2", "Attack2", "GreatSword_Attack02", 0.06f, true, 0.98f);
         AddAction(machine, locomotion, "Attack 3", "Attack3", "GreatSword_Attack03", 0.06f, true, 1.12f);
         AddAction(machine, locomotion, "Block", "Block", "GreatSword_Block", 0.05f, true);
+        AddDirectState(machine, locomotion, "Instant Guard", LoadNamedClip(KayKitMeleePath, "Melee_Blocking"), 0.40f);
         AddAction(machine, locomotion, "Hit", "Hit", "GreatSword_Hit", 0.04f, true);
         AddAction(machine, locomotion, "Dodge Forward", "DodgeForward", "Dodge_Forward", 0.04f, true);
         AddAction(machine, locomotion, "Dodge Backward", "DodgeBackward", "Dodge_Backward", 0.04f, true);
         AddAction(machine, locomotion, "Dodge Left", "DodgeLeft", "Dodge_Left", 0.04f, true);
         AddAction(machine, locomotion, "Dodge Right", "DodgeRight", "Dodge_Right", 0.04f, true);
         AddAction(machine, locomotion, "Death", "Death", "GreatSword_Death", 0.08f, false);
-        AddDirectState(machine, locomotion, "Bow Attack 1", LoadNamedClip(KayKitMeleePath, "Melee_2H_Attack_Spinning"), 0.58f);
-        AddDirectState(machine, locomotion, "Bow Attack 2", LoadNamedClip(KayKitMeleePath, "Melee_2H_Attack_Spin"), 0.62f);
-        AddDirectState(machine, locomotion, "Bow Attack 3", LoadNamedClip(KayKitMeleePath, "Melee_1H_Attack_Jump_Chop"), 0.66f);
+        AddDirectState(machine, locomotion, "Bow Attack 1", LoadNamedClip(KayKitMeleePath, "Melee_1H_Attack_Slice_Horizontal"), 0.48f);
+        AddDirectState(machine, locomotion, "Bow Attack 2", LoadNamedClip(KayKitMeleePath, "Melee_1H_Attack_Slice_Diagonal"), 0.52f);
+        AddDirectState(machine, locomotion, "Bow Attack 3", LoadNamedClip(KayKitMeleePath, "Melee_1H_Attack_Chop"), 0.56f);
         AddDirectState(machine, locomotion, "Bow Shot", LoadNamedClip(KayKitRangedPath, "Ranged_Bow_Release"), 0.52f);
         AssetImporter importer = AssetImporter.GetAtPath(path);
         importer.userData = ControllerSchema;

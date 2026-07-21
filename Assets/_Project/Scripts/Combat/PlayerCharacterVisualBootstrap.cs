@@ -22,7 +22,7 @@ public static class PlayerCharacterVisualBootstrap
         }
 
         PlayerCharacterVisualConfig config = Resources.Load<PlayerCharacterVisualConfig>(ResourcePath);
-        GameObject prefab = isPlayer ? config?.playerPrefab : config?.bossPrefab;
+        GameObject prefab = isPlayer ? config?.playerPrefab : SelectBossPrefab(config, character);
         if (prefab == null) return false;
 
         Animator oldAnimator = character.GetComponentInChildren<Animator>(true);
@@ -38,21 +38,19 @@ public static class PlayerCharacterVisualBootstrap
         replacement.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
         replacement.transform.localScale = Vector3.one;
         FitToHeightAndGround(replacement, character.transform, targetHeight);
-        if (isPlayer)
-        {
-            CharacterGroundingConstraint grounding = replacement.GetComponent<CharacterGroundingConstraint>();
-            if (grounding == null)
-                grounding = replacement.AddComponent<CharacterGroundingConstraint>();
-            grounding.Configure(character.transform);
-        }
+        CharacterGroundingConstraint grounding = replacement.GetComponent<CharacterGroundingConstraint>();
+        if (grounding == null)
+            grounding = replacement.AddComponent<CharacterGroundingConstraint>();
+        grounding.Configure(character.transform);
 
         animator = replacement.GetComponentInChildren<Animator>(true);
         ReparentEquipment(rightEquipment, FindHand(animator, replacement.transform, true));
         ReparentEquipment(leftEquipment, FindHand(animator, replacement.transform, false));
         if (rightEquipment != null)
         {
-            float lateralOffset = isPlayer ? 0.12f : 0.07f;
-            rightEquipment.position += character.transform.right * lateralOffset + character.transform.forward * 0.03f;
+            float lateralOffset = isPlayer ? 0.28f : 0.14f;
+            float forwardOffset = isPlayer ? 0.12f : 0.06f;
+            rightEquipment.position += character.transform.right * lateralOffset + character.transform.forward * forwardOffset;
             if (isPlayer)
                 rightEquipment.Rotate(character.transform.forward, -22f, Space.World);
 
@@ -80,6 +78,25 @@ public static class PlayerCharacterVisualBootstrap
         }
         visualRoot = replacement.transform;
         return true;
+    }
+
+    private static GameObject SelectBossPrefab(PlayerCharacterVisualConfig config, GameObject character)
+    {
+        if (config == null)
+            return null;
+
+        BossAI boss = character.GetComponent<BossAI>();
+        if (boss == null || config.bossPrefabs == null || config.bossPrefabs.Length == 0)
+            return config.bossPrefab;
+
+        int startIndex = Mathf.Max(0, boss.StageLevel - 1) % config.bossPrefabs.Length;
+        for (int offset = 0; offset < config.bossPrefabs.Length; offset++)
+        {
+            GameObject candidate = config.bossPrefabs[(startIndex + offset) % config.bossPrefabs.Length];
+            if (candidate != null)
+                return candidate;
+        }
+        return config.bossPrefab;
     }
 
     private static Transform FindHand(Animator animator, Transform root, bool right)
