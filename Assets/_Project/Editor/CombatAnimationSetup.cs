@@ -17,7 +17,7 @@ public static class CombatAnimationSetup
     private const string BossControllerPath = OutputRoot + "/BossCombat.controller";
     private const string PlayerModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Knight.fbx";
     private const string BossModelPath = "Assets/ThirdParty/KayKit/Characters/fbx/Barbarian.fbx";
-    private const string ControllerSchema = "kaykit-generic-combat-animation-v2";
+    private const string ControllerSchema = "kaykit-wide-greatsword-animation-v3";
     private static bool running;
 
     static CombatAnimationSetup() => EditorApplication.delayCall += SetupIfNeeded;
@@ -128,9 +128,11 @@ public static class CombatAnimationSetup
         locomotion.motion = tree;
         machine.defaultState = locomotion;
 
-        AddAction(machine, locomotion, "Attack 1", "Attack1", MeleeFile, "Melee_2H_Attack_Slice", 0.05f, true, 0.82f);
-        AddAction(machine, locomotion, "Attack 2", "Attack2", MeleeFile, "Melee_2H_Attack_Chop", 0.05f, true, 0.92f);
-        AddAction(machine, locomotion, "Attack 3", "Attack3", MeleeFile, "Melee_2H_Attack_Spin", 0.05f, true, 1.05f);
+        // Use the broadest authored 2H motions so each strike reads clearly
+        // from the combat camera instead of looking like a compact hand flick.
+        AddAction(machine, locomotion, "Attack 1", "Attack1", MeleeFile, "Melee_2H_Attack_Spin", 0.05f, true, 0.98f);
+        AddAction(machine, locomotion, "Attack 2", "Attack2", MeleeFile, "Melee_2H_Attack_Spinning", 0.05f, true, 1.12f);
+        AddAction(machine, locomotion, "Attack 3", "Attack3", MeleeFile, "Melee_2H_Attack_Chop", 0.05f, true, 1.08f);
         AddAction(machine, locomotion, "Block", "Block", MeleeFile, "Melee_Block", 0.04f, true);
         AddAction(machine, locomotion, "Hit", "Hit", GeneralFile, "Hit_A", 0.03f, true);
         AddAction(machine, locomotion, "Dodge Forward", "DodgeForward", MovementAdvancedFile, "Dodge_Forward", 0.03f, true);
