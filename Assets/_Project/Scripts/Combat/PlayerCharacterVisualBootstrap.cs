@@ -43,7 +43,12 @@ public static class PlayerCharacterVisualBootstrap
         ReparentEquipment(rightEquipment, FindHand(animator, replacement.transform, true));
         ReparentEquipment(leftEquipment, FindHand(animator, replacement.transform, false));
         if (rightEquipment != null)
-            rightEquipment.position += character.transform.right * 0.09f + character.transform.forward * 0.04f;
+        {
+            float lateralOffset = isPlayer ? 0.12f : 0.07f;
+            rightEquipment.position += character.transform.right * lateralOffset + character.transform.forward * 0.03f;
+            if (isPlayer)
+                rightEquipment.Rotate(character.transform.forward, -22f, Space.World);
+        }
 
         foreach (Collider childCollider in replacement.GetComponentsInChildren<Collider>(true))
             UnityEngine.Object.Destroy(childCollider);
