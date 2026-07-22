@@ -15,6 +15,7 @@ public sealed class TinyParryHUD : MonoBehaviour
     private int stageNumber = 1;
     private int totalStages = 5;
     private string messageText = "";
+    private string interactionPrompt = "";
     private float messageHideAt;
     private string resultText = "";
     private string resultHint = "";
@@ -27,6 +28,8 @@ public sealed class TinyParryHUD : MonoBehaviour
     private PlayerProgression pauseProgression;
     private int pauseSelectedSkill;
     private bool restShowingPassives;
+    private int restMenuCategory;
+    private int restMenuSelection;
     private bool prologueVisible;
     private bool titleVisible;
     private int prologuePage;
@@ -87,6 +90,7 @@ public sealed class TinyParryHUD : MonoBehaviour
             ? 0f
             : Time.unscaledTime + 2f;
     }
+    public void SetInteractionPrompt(string value) => interactionPrompt = value ?? string.Empty;
     public void ShowResult(string value)
     {
         restRoomVisible = false;
@@ -251,14 +255,16 @@ public sealed class TinyParryHUD : MonoBehaviour
         restRoomVisible = false;
         restRoomProgression = null;
         resultText = "CHOOSE YOUR WEAPON";
-        resultHint = "1  KEEP GREATSWORD\n2  SWITCH TO BOW\n\nThe bow uses fast melee attacks. Press R to fire an arrow skill.";
+        resultHint = "1  KEEP GREATSWORD\n2  SWITCH TO BOW\n\nThe bow uses fast melee attacks. Press F to fire an arrow skill.";
         overlayVisible = true;
     }
 
-    public void ShowRestRoom(PlayerProgression progression)
+    public void ShowRestRoom(PlayerProgression progression, int category = 0, int selection = 0)
     {
         titleVisible = false;
         restRoomProgression = progression;
+        restMenuCategory = Mathf.Clamp(category, 0, 1);
+        restMenuSelection = Mathf.Max(0, selection);
         restRoomVisible = true;
         resultText = "CASTLE REST CHAMBER";
         resultHint = string.Empty;
@@ -361,10 +367,8 @@ public sealed class TinyParryHUD : MonoBehaviour
         if (player != null)
         {
             const float hudLeft = 28f;
-            const float hudWidth = 460f;
             const float potionYFromBottom = 42f;
             const float healthBarYFromBottom = 96f;
-            const float activeSkillYFromBottom = 158f;
 
             Rect playerBar = new Rect(hudLeft, height - healthBarYFromBottom, 330f, 24f);
             DrawHealthBar(playerBar, "PLAYER", player.CurrentHealth, player.MaxHealth, new Color(0.18f, 0.82f, 0.32f));
@@ -411,6 +415,14 @@ public sealed class TinyParryHUD : MonoBehaviour
             {
                 GUI.Label(new Rect(width * 0.5f - 360f, 104f, 720f, 76f), messageText, centerStyle);
             }
+        }
+
+        if (!overlayVisible && !string.IsNullOrWhiteSpace(interactionPrompt))
+        {
+            GUIStyle promptStyle = new GUIStyle(centerStyle) { fontSize = 19, fontStyle = FontStyle.Bold };
+            Rect promptRect = new Rect(width * 0.5f - 260f, height - 126f, 520f, 42f);
+            DrawRect(promptRect, new Color(0.02f, 0.02f, 0.025f, 0.82f));
+            GUI.Label(promptRect, interactionPrompt, promptStyle);
         }
 
         if (overlayVisible && !string.IsNullOrWhiteSpace(resultText))
@@ -620,11 +632,14 @@ public sealed class TinyParryHUD : MonoBehaviour
         }
         else
         {
+            string stat0 = restMenuCategory == 0 && restMenuSelection == 0 ? ">" : " ";
+            string stat1 = restMenuCategory == 0 && restMenuSelection == 1 ? ">" : " ";
+            string stat2 = restMenuCategory == 0 && restMenuSelection == 2 ? ">" : " ";
             string statusText =
                 $"CLASS  {restRoomProgression.GetClassName()}\n\n" +
-                $"[H]  HP                  {restRoomProgression.Vitality}\n" +
-                $"[A]  ATTACK              {restRoomProgression.Power}\n" +
-                $"[S]  ATTACK SPEED        {restRoomProgression.Agility}";
+                $"{stat0}  HP                  {restRoomProgression.Vitality}\n" +
+                $"{stat1}  ATTACK              {restRoomProgression.Power}\n" +
+                $"{stat2}  ATTACK SPEED        {restRoomProgression.Agility}";
             GUI.Label(new Rect(statPanel.x + inner, statPanel.y + 62f * scale, statPanel.width - inner * 2f, 190f * scale), statusText, bodyStyle);
             GUI.Label(new Rect(statPanel.x + inner, statPanel.yMax - 66f * scale, statPanel.width - inner * 2f, 40f * scale),
                 $"STAT POINTS  {restRoomProgression.StatPoints}", pointStyle);
@@ -639,10 +654,11 @@ public sealed class TinyParryHUD : MonoBehaviour
             string passiveText = "PASSIVE  [6-0]\n\n";
             for (int i = 0; i < PlayerProgression.ActiveSkillCount; i++)
             {
-                activeText += $"[{i + 1}] {restRoomProgression.GetSkillName(i)}  Lv.{restRoomProgression.GetSkillRank(i)}\n\n";
+                string activeMarker = restMenuCategory == 1 && restMenuSelection == i ? ">" : " ";
+                activeText += $"{activeMarker} {restRoomProgression.GetSkillName(i)}  Lv.{restRoomProgression.GetSkillRank(i)}\n\n";
                 int passiveSlot = PlayerProgression.ActiveSkillCount + i;
-                string passiveKey = i == 4 ? "0" : (i + 6).ToString();
-                passiveText += $"[{passiveKey}] {restRoomProgression.GetSkillName(passiveSlot)}  Lv.{restRoomProgression.GetSkillRank(passiveSlot)}\n\n";
+                string passiveMarker = restMenuCategory == 1 && restMenuSelection == passiveSlot ? ">" : " ";
+                passiveText += $"{passiveMarker} {restRoomProgression.GetSkillName(passiveSlot)}  Lv.{restRoomProgression.GetSkillRank(passiveSlot)}\n\n";
             }
 
             GUI.Label(new Rect(activeX, skillsY, skillColumnWidth, skillPanel.height - 136f * scale), activeText, bodyStyle);
@@ -657,9 +673,7 @@ public sealed class TinyParryHUD : MonoBehaviour
             fontStyle = FontStyle.Bold,
             alignment = TextAnchor.MiddleCenter
         };
-        string footer = restRoomProgression != null && restRoomProgression.HasChosenClass
-            ? "H/A/S STAT   1-5 ACTIVE   6-0 PASSIVE   SHIFT+NUMBER REFUND   ENTER CONTINUE"
-            : "H / A / S  SPEND STAT     ENTER  CONTINUE";
+        string footer = "TAB CATEGORY   UP/DOWN SELECT   RIGHT/ENTER INCREASE   LEFT/BACKSPACE DECREASE   E CLOSE";
         GUI.Label(new Rect(panel.x + margin, panel.yMax - 58f * scale, panel.width - margin * 2f, 38f * scale),
             footer, footerStyle);
     }
@@ -696,7 +710,7 @@ public sealed class TinyParryHUD : MonoBehaviour
         GUIStyle iconStyle = new GUIStyle(centerStyle) { fontSize = 14, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, wordWrap = true };
         GUIStyle cooldownStyle = new GUIStyle(centerStyle) { fontSize = 24, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
         GUI.Label(new Rect(icon.x + 6f, icon.y + 4f, 24f, 18f), "A", tagStyle);
-        GUI.Label(new Rect(icon.xMax - 27f, icon.y + 4f, 20f, 18f), "R", tagStyle);
+        GUI.Label(new Rect(icon.xMax - 27f, icon.y + 4f, 20f, 18f), "F", tagStyle);
         GUI.Label(new Rect(icon.x + 7f, icon.y + 21f, icon.width - 14f, 45f), ShortSkillName(progression.GetEquippedActiveSkillName()), iconStyle);
 
         if (combat != null && !combat.IsActiveSkillReady)
@@ -837,7 +851,7 @@ public sealed class TinyParryHUD : MonoBehaviour
 
     private void DrawPotionCount(Rect rect, int remaining)
     {
-        GUI.Label(rect, $"POTION [E]   x {remaining}", labelStyle);
+        GUI.Label(rect, $"POTION [R]   x {remaining}", labelStyle);
     }
 
     private void DrawBossHealthBar(Rect rect, int current, int maximum, Color fill)

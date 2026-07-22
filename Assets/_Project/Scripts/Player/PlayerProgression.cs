@@ -125,6 +125,20 @@ public sealed class PlayerProgression : MonoBehaviour
         return true;
     }
 
+    public bool RefundStatPoint(int index)
+    {
+        switch (index)
+        {
+            case 0: if (vitality <= 10) return false; vitality--; break;
+            case 1: if (power <= 10) return false; power--; break;
+            case 2: if (agility <= 10) return false; agility--; break;
+            default: return false;
+        }
+        statPoints++;
+        ApplyStats(index == 0);
+        return true;
+    }
+
     public bool SpendSkillPoint(int slot)
     {
         if (!HasChosenClass || skillPoints <= 0 || slot < 0 || slot >= TotalSkillCount || learnedSkills[slot] >= MaxSkillRank)

@@ -199,6 +199,7 @@ public static class TinyParryArenaBuilder
         cc.radius = 0.38f;
 
         root.AddComponent<PlayerController>();
+        root.AddComponent<PlayerInteractor>();
         root.AddComponent<PlayerLockOn>();
         PlayerCombat combat = root.AddComponent<PlayerCombat>();
         root.AddComponent<PlayerPotion>();

@@ -9,7 +9,7 @@ public sealed class TinyParryStageManager : MonoBehaviour
 {
     private enum GameState
     {
-        Title, Prologue, Playing, Transitioning, PostStageDecision, ClassSelection, Resting,
+        Title, Prologue, Playing, Transitioning, AwaitingExit, ClassSelection, RestExploration, Resting,
         Paused, Dying, Defeat, Victory
     }
 
@@ -27,13 +27,21 @@ public sealed class TinyParryStageManager : MonoBehaviour
     private int currentStage;
     private bool runtimeInitialized;
     private GameState state;
+    private GameState stateBeforePause;
     private float runStartedAt;
     private bool debugInvincible;
     private CombatantHealth playerHealth;
     private PlayerPotion potion;
     private PlayerProgression progression;
+    private PlayerInteractor interactor;
     private Vector3 restRoomPosition = new Vector3(42f, 0.15f, 0f);
+    private StageExitDoor[] stageExitDoors;
+    private StageExitDoor restExitDoor;
+    private int restMenuCategory;
+    private int restMenuSelection;
     private int prologuePage;
+
+    public bool CanUseRestStatue => state == GameState.RestExploration;
 
     public void Configure(GameObject[] roots, CombatantHealth[] bossHealth, string[] names,
         Transform playerTransform, TinyParryHUD hudValue, PlayerController controllerValue, PlayerCombat combatValue)
@@ -63,6 +71,8 @@ public sealed class TinyParryStageManager : MonoBehaviour
             potion = player.GetComponent<PlayerPotion>();
             progression = player.GetComponent<PlayerProgression>();
             if (progression == null) progression = player.gameObject.AddComponent<PlayerProgression>();
+            interactor = player.GetComponent<PlayerInteractor>();
+            if (interactor == null) interactor = player.gameObject.AddComponent<PlayerInteractor>();
             if (playerHealth != null) playerHealth.Died += OnPlayerDied;
         }
 
@@ -70,7 +80,7 @@ public sealed class TinyParryStageManager : MonoBehaviour
             foreach (CombatantHealth boss in bosses)
                 if (boss != null) boss.Died += OnAnyBossDied;
 
-        CreateWaitingRoom();
+        CreateInteractionSpaces();
         ActivateStageImmediate(currentStage, true);
         if (autoStartNextLoad) { autoStartNextLoad = false; StartRun(); }
         else EnterTitle();
@@ -101,9 +111,9 @@ public sealed class TinyParryStageManager : MonoBehaviour
                 HandleDebugKeys();
                 CheckCurrentBossDeath();
                 break;
-            case GameState.PostStageDecision:
-                if (ContinuePressed()) ContinueAfterDecision();
-                else if (RestPressed()) EnterRestRoom();
+            case GameState.AwaitingExit:
+            case GameState.RestExploration:
+                if (PausePressed()) EnterPause();
                 break;
             case GameState.ClassSelection:
                 if (NumberPressed(1)) ChooseClass(PlayerWeaponClass.Greatsword);
@@ -193,8 +203,10 @@ public sealed class TinyParryStageManager : MonoBehaviour
 
     private void EnterPause()
     {
+        stateBeforePause = state;
         state = GameState.Paused;
         SetGameplayControls(false);
+        SetInteractionEnabled(false);
         Time.timeScale = 0f;
         hud?.ShowPause(progression);
     }
@@ -202,10 +214,13 @@ public sealed class TinyParryStageManager : MonoBehaviour
     private void ResumeFromPause()
     {
         Time.timeScale = 1f;
-        state = GameState.Playing;
+        state = stateBeforePause == GameState.AwaitingExit || stateBeforePause == GameState.RestExploration
+            ? stateBeforePause
+            : GameState.Playing;
         hud?.ClearOverlay();
         SetEnemySimulation(true);
         SetGameplayControls(true);
+        SetInteractionEnabled(true);
     }
 
     private void OnAnyBossDied(CombatantHealth deadBoss)
@@ -247,62 +262,104 @@ public sealed class TinyParryStageManager : MonoBehaviour
         }
         else
         {
-            state = GameState.PostStageDecision;
-            hud?.ShowStageDecision(clearedStage, progression);
+            UnlockCurrentExitDoor();
         }
     }
 
     private void ChooseClass(PlayerWeaponClass chosen)
     {
         progression?.ChooseClass(chosen);
-        state = GameState.PostStageDecision;
-        hud?.ShowStageDecision(currentStage + 1, progression);
+        UnlockCurrentExitDoor();
+    }
+
+    private void UnlockCurrentExitDoor()
+    {
+        state = GameState.AwaitingExit;
+        hud?.ClearOverlay();
+        if (stageExitDoors != null && currentStage >= 0 && currentStage < stageExitDoors.Length)
+            stageExitDoors[currentStage]?.SetUnlocked(true);
+        SetGameplayControls(true);
+        SetInteractionEnabled(true);
+        hud?.SetMessage("THE SEALED DOOR HAS OPENED  -  APPROACH IT AND PRESS E");
     }
 
     private void ContinueAfterDecision()
     {
         hud?.ClearOverlay();
+        restExitDoor?.ResetDoor();
         ActivateStageImmediate(currentStage + 1, true);
         state = GameState.Playing;
         SetGameplayControls(true);
+        SetInteractionEnabled(true);
     }
 
-    private void EnterRestRoom()
+    public void EnterRestChamberFromDoor(int stageIndex)
     {
-        state = GameState.Resting;
-        SetGameplayControls(false);
-        TeleportPlayer(restRoomPosition);
+        if (state != GameState.AwaitingExit || stageIndex != currentStage) return;
+        state = GameState.RestExploration;
+        TeleportPlayer(restRoomPosition + Vector3.back * 3.5f);
         if (playerHealth != null) playerHealth.Heal(playerHealth.MaxHealth);
         potion?.ResetPotions();
-        hud?.ShowRestRoom(progression);
+        hud?.ClearOverlay();
+        SetGameplayControls(true);
+        SetInteractionEnabled(true);
+        hud?.SetMessage("REST CHAMBER  -  APPROACH THE STATUE AND PRESS E");
+    }
+
+    public void LeaveRestChamber()
+    {
+        if (state != GameState.RestExploration) return;
+        ContinueAfterDecision();
+    }
+
+    public void OpenRestStatueMenu()
+    {
+        if (state != GameState.RestExploration) return;
+        state = GameState.Resting;
+        restMenuCategory = 0;
+        restMenuSelection = 0;
+        SetGameplayControls(false);
+        SetInteractionEnabled(false);
+        hud?.ShowRestRoom(progression, restMenuCategory, restMenuSelection);
     }
 
     private void HandleRestMenu()
     {
-        if (ConfirmPressed())
+        if (PausePressed() || LetterPressed('e'))
         {
-            ContinueAfterDecision();
+            state = GameState.RestExploration;
+            hud?.ClearOverlay();
+            SetGameplayControls(true);
+            SetInteractionEnabled(true);
             return;
         }
 
-        bool changed = false;
-        if (LetterPressed('h')) changed = progression != null && progression.SpendStatPoint(0);
-        else if (LetterPressed('a')) changed = progression != null && progression.SpendStatPoint(1);
-        else if (LetterPressed('s')) changed = progression != null && progression.SpendStatPoint(2);
-        else
+        if (TabPressed())
         {
-            bool refund = ShiftHeld();
-            for (int slot = 0; slot < PlayerProgression.TotalSkillCount && !changed; slot++)
-            {
-                int number = slot == 9 ? 0 : slot + 1;
-                if (!NumberPressed(number)) continue;
-                changed = progression != null && (refund
-                    ? progression.RefundSkillPoint(slot)
-                    : progression.SpendSkillPoint(slot));
-            }
+            restMenuCategory = 1 - restMenuCategory;
+            restMenuSelection = 0;
+            hud?.ShowRestRoom(progression, restMenuCategory, restMenuSelection);
+            return;
         }
 
-        if (changed) hud?.ShowRestRoom(progression);
+        int count = restMenuCategory == 0 ? 3 : PlayerProgression.TotalSkillCount;
+        bool moved = false;
+        if (ArrowPressed(-1)) { restMenuSelection = (restMenuSelection - 1 + count) % count; moved = true; }
+        else if (ArrowPressed(1)) { restMenuSelection = (restMenuSelection + 1) % count; moved = true; }
+
+        bool changed = false;
+        if (ConfirmPressed() || HorizontalArrowPressed(1))
+        {
+            changed = progression != null && (restMenuCategory == 0
+                ? progression.SpendStatPoint(restMenuSelection)
+                : progression.SpendSkillPoint(restMenuSelection));
+        }
+        else if (HorizontalArrowPressed(-1) || BackspacePressed())
+            changed = progression != null && (restMenuCategory == 0
+                ? progression.RefundStatPoint(restMenuSelection)
+                : progression.RefundSkillPoint(restMenuSelection));
+
+        if (changed || moved) hud?.ShowRestRoom(progression, restMenuCategory, restMenuSelection);
     }
 
     private IEnumerator VictoryRoutine()
@@ -351,7 +408,7 @@ public sealed class TinyParryStageManager : MonoBehaviour
         if (cc != null) cc.enabled = true;
     }
 
-    private void CreateWaitingRoom()
+    private void CreateInteractionSpaces()
     {
         GameObject root = new GameObject("War Waiting Room");
         GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -369,6 +426,55 @@ public sealed class TinyParryStageManager : MonoBehaviour
             pillar.transform.position = new Vector3(x, 1.5f, z);
             pillar.transform.localScale = new Vector3(0.6f, 2f, 0.6f);
         }
+
+        GameObject statue = new GameObject("Royal Rest Statue");
+        statue.transform.SetParent(root.transform, false);
+        statue.transform.position = restRoomPosition + Vector3.forward * 2f;
+        statue.AddComponent<RestStatueInteractable>().Configure(this);
+        CreatePrimitive(statue.transform, "Stone Pedestal", PrimitiveType.Cylinder, new Vector3(0f, 0.35f, 0f), new Vector3(1.7f, 0.35f, 1.7f));
+        CreatePrimitive(statue.transform, "Stone Body", PrimitiveType.Capsule, new Vector3(0f, 2.25f, 0f), new Vector3(1.35f, 1.8f, 1.35f));
+        CreatePrimitive(statue.transform, "Stone Head", PrimitiveType.Sphere, new Vector3(0f, 4.15f, 0f), Vector3.one * 1.15f);
+        CreatePrimitive(statue.transform, "Stone Sword", PrimitiveType.Cube, new Vector3(0f, 2.1f, -0.85f), new Vector3(0.28f, 3.2f, 0.28f));
+
+        restExitDoor = CreateDoor(root.transform, "Rest Chamber Exit", restRoomPosition + Vector3.back * 6f, -1, true, false);
+
+        stageExitDoors = new StageExitDoor[stageRoots != null ? stageRoots.Length : 0];
+        for (int i = 0; i < stageExitDoors.Length; i++)
+        {
+            if (stageRoots[i] == null) continue;
+            Vector3 localPosition = new Vector3(0f, 0f, 21f);
+            if (bosses != null && i < bosses.Length && bosses[i] != null)
+                localPosition = stageRoots[i].transform.InverseTransformPoint(bosses[i].transform.position) + Vector3.forward * 6f;
+            stageExitDoors[i] = CreateDoor(stageRoots[i].transform, $"Stage {i + 1} Sealed Door", localPosition, i, false, true);
+        }
+    }
+
+    private StageExitDoor CreateDoor(Transform parent, string name, Vector3 position, int stageIndex, bool restExit, bool localSpace)
+    {
+        GameObject door = new GameObject(name);
+        door.transform.SetParent(parent, false);
+        if (localSpace) door.transform.localPosition = position;
+        else door.transform.position = position;
+
+        CreatePrimitive(door.transform, "Left Frame", PrimitiveType.Cube, new Vector3(-2f, 2f, 0f), new Vector3(0.55f, 4f, 0.75f));
+        CreatePrimitive(door.transform, "Right Frame", PrimitiveType.Cube, new Vector3(2f, 2f, 0f), new Vector3(0.55f, 4f, 0.75f));
+        CreatePrimitive(door.transform, "Top Frame", PrimitiveType.Cube, new Vector3(0f, 4.15f, 0f), new Vector3(4.55f, 0.55f, 0.75f));
+        GameObject slab = CreatePrimitive(door.transform, "Door Slab", PrimitiveType.Cube, new Vector3(0f, 2f, 0f), new Vector3(3.5f, 3.8f, 0.45f));
+        StageExitDoor result = door.AddComponent<StageExitDoor>();
+        result.Configure(this, stageIndex, restExit, slab.transform);
+        return result;
+    }
+
+    private static GameObject CreatePrimitive(Transform parent, string name, PrimitiveType type, Vector3 localPosition, Vector3 localScale)
+    {
+        GameObject value = GameObject.CreatePrimitive(type);
+        value.name = name;
+        value.transform.SetParent(parent, false);
+        value.transform.localPosition = localPosition;
+        value.transform.localScale = localScale;
+        Renderer renderer = value.GetComponent<Renderer>();
+        if (renderer != null) renderer.material.color = new Color(0.28f, 0.29f, 0.32f, 1f);
+        return value;
     }
 
     private string GetStageName(int index) => stageNames != null && index >= 0 && index < stageNames.Length ? stageNames[index] : $"Round {index + 1}";
@@ -419,7 +525,17 @@ public sealed class TinyParryStageManager : MonoBehaviour
         hud?.ShowDefeat(currentStage + 1, deaths);
     }
 
-    private void SetGameplayControls(bool enabled) { controller?.SetControlsEnabled(enabled); combat?.SetControlsEnabled(enabled); }
+    private void SetGameplayControls(bool enabled)
+    {
+        controller?.SetControlsEnabled(enabled);
+        combat?.SetControlsEnabled(enabled);
+        if (potion != null) potion.enabled = enabled;
+    }
+
+    private void SetInteractionEnabled(bool enabled)
+    {
+        if (interactor != null) interactor.enabled = enabled;
+    }
 
     private void SetEnemySimulation(bool enabled)
     {
@@ -459,7 +575,7 @@ public sealed class TinyParryStageManager : MonoBehaviour
     {
 #if ENABLE_INPUT_SYSTEM
         Keyboard k = Keyboard.current; if (k == null) return false;
-        switch (char.ToLowerInvariant(c)) { case 'a': return k.aKey.wasPressedThisFrame; case 'c': return k.cKey.wasPressedThisFrame; case 'h': return k.hKey.wasPressedThisFrame; case 'n': return k.nKey.wasPressedThisFrame; case 'r': return k.rKey.wasPressedThisFrame; case 's': return k.sKey.wasPressedThisFrame; case 't': return k.tKey.wasPressedThisFrame; case 'x': return k.xKey.wasPressedThisFrame; case 'z': return k.zKey.wasPressedThisFrame; default: return false; }
+        switch (char.ToLowerInvariant(c)) { case 'a': return k.aKey.wasPressedThisFrame; case 'c': return k.cKey.wasPressedThisFrame; case 'e': return k.eKey.wasPressedThisFrame; case 'h': return k.hKey.wasPressedThisFrame; case 'n': return k.nKey.wasPressedThisFrame; case 'r': return k.rKey.wasPressedThisFrame; case 's': return k.sKey.wasPressedThisFrame; case 't': return k.tKey.wasPressedThisFrame; case 'x': return k.xKey.wasPressedThisFrame; case 'z': return k.zKey.wasPressedThisFrame; default: return false; }
 #else
         return Input.GetKeyDown(c.ToString());
 #endif
@@ -479,6 +595,23 @@ public sealed class TinyParryStageManager : MonoBehaviour
         return k != null && (direction < 0 ? k.upArrowKey.wasPressedThisFrame : k.downArrowKey.wasPressedThisFrame);
 #else
         return Input.GetKeyDown(direction < 0 ? KeyCode.UpArrow : KeyCode.DownArrow);
+#endif
+    }
+    private static bool HorizontalArrowPressed(int direction)
+    {
+#if ENABLE_INPUT_SYSTEM
+        Keyboard k = Keyboard.current;
+        return k != null && (direction < 0 ? k.leftArrowKey.wasPressedThisFrame : k.rightArrowKey.wasPressedThisFrame);
+#else
+        return Input.GetKeyDown(direction < 0 ? KeyCode.LeftArrow : KeyCode.RightArrow);
+#endif
+    }
+    private static bool BackspacePressed()
+    {
+#if ENABLE_INPUT_SYSTEM
+        Keyboard k = Keyboard.current; return k != null && k.backspaceKey.wasPressedThisFrame;
+#else
+        return Input.GetKeyDown(KeyCode.Backspace);
 #endif
     }
     private static bool NumberPressed(int number)
