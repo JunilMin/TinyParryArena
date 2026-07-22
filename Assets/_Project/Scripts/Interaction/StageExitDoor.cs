@@ -11,7 +11,7 @@ public sealed class StageExitDoor : MonoBehaviour, IPlayerInteractable
 
     public Transform InteractionTransform => transform;
     public bool CanInteract => unlocked && !opened;
-    public string InteractionPrompt => restExit ? "LEAVE REST CHAMBER" : "OPEN THE SEALED DOOR";
+    public string InteractionPrompt => restExit ? "ENTER THE NEXT FLOOR" : "OPEN THE STAIR GATE";
 
     public void Configure(TinyParryStageManager owner, int index, bool isRestExit, Transform slab)
     {

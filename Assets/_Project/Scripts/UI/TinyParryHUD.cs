@@ -266,7 +266,7 @@ public sealed class TinyParryHUD : MonoBehaviour
         restMenuCategory = Mathf.Clamp(category, 0, 1);
         restMenuSelection = Mathf.Max(0, selection);
         restRoomVisible = true;
-        resultText = "CASTLE REST CHAMBER";
+        resultText = "TOWER SHRINE";
         resultHint = string.Empty;
         overlayVisible = true;
     }
@@ -400,7 +400,7 @@ public sealed class TinyParryHUD : MonoBehaviour
         Rect stagePanel = new Rect(width - 292f, 22f, 264f, 84f);
         DrawRect(stagePanel, new Color(0.03f, 0.03f, 0.03f, 0.78f));
         GUI.Label(new Rect(stagePanel.x + 14f, stagePanel.y + 10f, stagePanel.width - 28f, 28f),
-            $"ROYAL CASTLE  ·  STAGE {stageNumber} / {totalStages}", labelStyle);
+            $"KING'S TOWER  ·  FLOOR {stageNumber:00} / {totalStages:00}", labelStyle);
         GUI.Label(new Rect(stagePanel.x + 14f, stagePanel.y + 42f, stagePanel.width - 28f, 28f),
             stageName, labelStyle);
 
@@ -591,7 +591,7 @@ public sealed class TinyParryHUD : MonoBehaviour
             alignment = TextAnchor.MiddleCenter
         };
         GUI.Label(new Rect(panel.x + margin, panel.y + 8f * scale, panel.width - margin * 2f, titleHeight),
-            "CASTLE REST CHAMBER", titleStyle);
+            "TOWER SHRINE", titleStyle);
 
         float contentTop = panel.y + titleHeight + 18f * scale;
         float gap = 18f * scale;

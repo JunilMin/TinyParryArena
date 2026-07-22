@@ -7,6 +7,9 @@ using UnityEngine.InputSystem;
 
 public sealed class TinyParryStageManager : MonoBehaviour
 {
+    private const int TotalTowerFloors = 50;
+    private const float FloorHeight = 12f;
+    private const int StairStepCount = 40;
     private enum GameState
     {
         Title, Prologue, Playing, Transitioning, AwaitingExit, ClassSelection, RestExploration, Resting,
@@ -34,9 +37,9 @@ public sealed class TinyParryStageManager : MonoBehaviour
     private PlayerPotion potion;
     private PlayerProgression progression;
     private PlayerInteractor interactor;
-    private Vector3 restRoomPosition = new Vector3(42f, 0.15f, 0f);
     private StageExitDoor[] stageExitDoors;
-    private StageExitDoor restExitDoor;
+    private StageExitDoor[] floorEntranceDoors;
+    private Material towerStoneMaterial;
     private int restMenuCategory;
     private int restMenuSelection;
     private int prologuePage;
@@ -63,6 +66,7 @@ public sealed class TinyParryStageManager : MonoBehaviour
         if (runtimeInitialized) return;
         runtimeInitialized = true;
         Time.timeScale = 1f;
+        ExpandTowerToFiftyFloors();
         currentStage = FindInitiallyActiveStage();
 
         if (player != null)
@@ -92,6 +96,90 @@ public sealed class TinyParryStageManager : MonoBehaviour
         for (int i = 0; i < stageRoots.Length; i++)
             if (stageRoots[i] != null && stageRoots[i].activeSelf) return i;
         return 0;
+    }
+
+    private void ExpandTowerToFiftyFloors()
+    {
+        if (stageRoots == null || stageRoots.Length == 0) return;
+
+        GameObject[] templates = stageRoots;
+        CombatantHealth[] bossTemplates = bosses;
+        string[] nameTemplates = stageNames;
+        int templateCount = templates.Length;
+        GameObject[] expandedRoots = new GameObject[TotalTowerFloors];
+        CombatantHealth[] expandedBosses = new CombatantHealth[TotalTowerFloors];
+        string[] expandedNames = new string[TotalTowerFloors];
+
+        for (int floor = 0; floor < TotalTowerFloors; floor++)
+        {
+            int templateIndex = floor % templateCount;
+            GameObject floorRoot;
+            CombatantHealth floorBoss;
+
+            if (floor < templateCount)
+            {
+                floorRoot = templates[floor];
+                floorBoss = bossTemplates != null && floor < bossTemplates.Length ? bossTemplates[floor] : null;
+            }
+            else
+            {
+                GameObject template = templates[templateIndex];
+                floorRoot = template != null ? Instantiate(template, template.transform.parent) : null;
+                if (floorRoot != null)
+                {
+                    floorRoot.SetActive(false);
+                    floorBoss = floorRoot.GetComponentInChildren<CombatantHealth>(true);
+                }
+                else
+                {
+                    floorBoss = null;
+                }
+            }
+
+            if (floorRoot != null)
+            {
+                floorRoot.name = $"Floor {floor + 1:00} - {GetTemplateName(nameTemplates, templateIndex)}";
+                floorRoot.transform.position = Vector3.up * (floor * FloorHeight);
+                floorRoot.SetActive(floor == 0);
+            }
+
+            if (floorBoss != null)
+            {
+                int baseHealth = bossTemplates != null && templateIndex < bossTemplates.Length && bossTemplates[templateIndex] != null
+                    ? bossTemplates[templateIndex].MaxHealth
+                    : 120;
+                float healthScale = 1f + floor * 0.12f;
+                floorBoss.Configure(Mathf.RoundToInt(baseHealth * healthScale));
+                BossAI ai = floorBoss.GetComponent<BossAI>();
+                if (ai != null)
+                {
+                    ai.SetPlayer(player);
+                    ai.ConfigureDifficulty(
+                        floor + 1,
+                        Mathf.Clamp(3 + floor / 7, 3, 8),
+                        Mathf.Min(3.8f, 1.75f + floor * 0.025f),
+                        Mathf.Min(4.2f, 2.9f + floor * 0.018f),
+                        Mathf.Max(0.09f, 0.24f - floor * 0.0025f),
+                        100 + floor * 4,
+                        30 + floor / 4);
+                }
+            }
+
+            expandedRoots[floor] = floorRoot;
+            expandedBosses[floor] = floorBoss;
+            expandedNames[floor] = $"FLOOR {floor + 1:00}  ·  {GetTemplateName(nameTemplates, templateIndex)}";
+        }
+
+        stageRoots = expandedRoots;
+        bosses = expandedBosses;
+        stageNames = expandedNames;
+    }
+
+    private static string GetTemplateName(string[] names, int index)
+    {
+        return names != null && index >= 0 && index < names.Length && !string.IsNullOrWhiteSpace(names[index])
+            ? names[index]
+            : "Royal Tower";
     }
 
     private void Update()
@@ -218,7 +306,8 @@ public sealed class TinyParryStageManager : MonoBehaviour
             ? stateBeforePause
             : GameState.Playing;
         hud?.ClearOverlay();
-        SetEnemySimulation(true);
+        if (state == GameState.Playing)
+            SetEnemySimulation(true);
         SetGameplayControls(true);
         SetInteractionEnabled(true);
     }
@@ -242,7 +331,7 @@ public sealed class TinyParryStageManager : MonoBehaviour
     {
         GameAudioManager.Instance.PlayRoundClear();
         int clearedStage = currentStage + 1;
-        hud?.SetMessage($"STAGE {clearedStage} CLEARED");
+        hud?.SetMessage($"FLOOR {clearedStage:00} CLEARED");
 
         if (progression != null)
             progression.AwardStageClearPoints(clearedStage);
@@ -280,15 +369,15 @@ public sealed class TinyParryStageManager : MonoBehaviour
             stageExitDoors[currentStage]?.SetUnlocked(true);
         SetGameplayControls(true);
         SetInteractionEnabled(true);
-        hud?.SetMessage("THE SEALED DOOR HAS OPENED  -  APPROACH IT AND PRESS E");
+        hud?.SetMessage("THE WAY UP HAS OPENED  -  PRESS E AT THE STAIR GATE");
     }
 
     private void ContinueAfterDecision()
     {
         hud?.ClearOverlay();
-        restExitDoor?.ResetDoor();
         ActivateStageImmediate(currentStage + 1, true);
         state = GameState.Playing;
+        SetBossSimulation(currentStage, true);
         SetGameplayControls(true);
         SetInteractionEnabled(true);
     }
@@ -297,13 +386,18 @@ public sealed class TinyParryStageManager : MonoBehaviour
     {
         if (state != GameState.AwaitingExit || stageIndex != currentStage) return;
         state = GameState.RestExploration;
-        TeleportPlayer(restRoomPosition + Vector3.back * 3.5f);
+        int nextFloor = currentStage + 1;
+        TeleportPlayer(new Vector3(60f, currentStage * FloorHeight + 0.15f, 22f));
+        if (player != null) player.rotation = Quaternion.Euler(0f, 180f, 0f);
+        controller?.ResetVerticalMotion();
+        if (floorEntranceDoors != null && currentStage < floorEntranceDoors.Length)
+            floorEntranceDoors[currentStage]?.SetUnlocked(true);
         if (playerHealth != null) playerHealth.Heal(playerHealth.MaxHealth);
         potion?.ResetPotions();
         hud?.ClearOverlay();
         SetGameplayControls(true);
         SetInteractionEnabled(true);
-        hud?.SetMessage("REST CHAMBER  -  APPROACH THE STATUE AND PRESS E");
+        hud?.SetMessage($"ASCEND TO FLOOR {nextFloor + 1:00}  -  THE STATUE RESTS MIDWAY");
     }
 
     public void LeaveRestChamber()
@@ -410,43 +504,73 @@ public sealed class TinyParryStageManager : MonoBehaviour
 
     private void CreateInteractionSpaces()
     {
-        GameObject root = new GameObject("War Waiting Room");
-        GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        floor.name = "Waiting Room Floor";
-        floor.transform.SetParent(root.transform, false);
-        floor.transform.position = new Vector3(restRoomPosition.x, -0.35f, restRoomPosition.z);
-        floor.transform.localScale = new Vector3(14f, 0.6f, 14f);
-        for (int i = 0; i < 4; i++)
+        Shader stoneShader = Shader.Find("Universal Render Pipeline/Lit");
+        if (stoneShader == null) stoneShader = Shader.Find("Standard");
+        if (stoneShader != null)
         {
-            GameObject pillar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            pillar.name = "Waiting Room Pillar";
-            pillar.transform.SetParent(root.transform, false);
-            float x = restRoomPosition.x + (i % 2 == 0 ? -5.5f : 5.5f);
-            float z = restRoomPosition.z + (i < 2 ? -5.5f : 5.5f);
-            pillar.transform.position = new Vector3(x, 1.5f, z);
-            pillar.transform.localScale = new Vector3(0.6f, 2f, 0.6f);
+            towerStoneMaterial = new Material(stoneShader) { name = "Runtime Tower Stone" };
+            towerStoneMaterial.color = new Color(0.28f, 0.29f, 0.32f, 1f);
         }
-
-        GameObject statue = new GameObject("Royal Rest Statue");
-        statue.transform.SetParent(root.transform, false);
-        statue.transform.position = restRoomPosition + Vector3.forward * 2f;
-        statue.AddComponent<RestStatueInteractable>().Configure(this);
-        CreatePrimitive(statue.transform, "Stone Pedestal", PrimitiveType.Cylinder, new Vector3(0f, 0.35f, 0f), new Vector3(1.7f, 0.35f, 1.7f));
-        CreatePrimitive(statue.transform, "Stone Body", PrimitiveType.Capsule, new Vector3(0f, 2.25f, 0f), new Vector3(1.35f, 1.8f, 1.35f));
-        CreatePrimitive(statue.transform, "Stone Head", PrimitiveType.Sphere, new Vector3(0f, 4.15f, 0f), Vector3.one * 1.15f);
-        CreatePrimitive(statue.transform, "Stone Sword", PrimitiveType.Cube, new Vector3(0f, 2.1f, -0.85f), new Vector3(0.28f, 3.2f, 0.28f));
-
-        restExitDoor = CreateDoor(root.transform, "Rest Chamber Exit", restRoomPosition + Vector3.back * 6f, -1, true, false);
 
         stageExitDoors = new StageExitDoor[stageRoots != null ? stageRoots.Length : 0];
-        for (int i = 0; i < stageExitDoors.Length; i++)
+        floorEntranceDoors = new StageExitDoor[stageExitDoors.Length];
+        for (int floor = 0; floor < stageExitDoors.Length - 1; floor++)
         {
-            if (stageRoots[i] == null) continue;
-            Vector3 localPosition = new Vector3(0f, 0f, 21f);
-            if (bosses != null && i < bosses.Length && bosses[i] != null)
-                localPosition = stageRoots[i].transform.InverseTransformPoint(bosses[i].transform.position) + Vector3.forward * 6f;
-            stageExitDoors[i] = CreateDoor(stageRoots[i].transform, $"Stage {i + 1} Sealed Door", localPosition, i, false, true);
+            if (stageRoots[floor] == null) continue;
+            CreateTowerTransition(floor);
         }
+    }
+
+    private void CreateTowerTransition(int floor)
+    {
+        Transform floorRoot = stageRoots[floor].transform;
+        GameObject transition = new GameObject($"Stairway {floor + 1:00} to {floor + 2:00}");
+        transition.transform.SetParent(floorRoot, false);
+        transition.transform.localPosition = new Vector3(60f, 0f, 0f);
+
+        const float startZ = 20f;
+        float treadDepth = 38f / StairStepCount;
+        float rise = FloorHeight / StairStepCount;
+        for (int step = 0; step < StairStepCount; step++)
+        {
+            float y = (step + 0.5f) * rise;
+            float z = startZ - (step + 0.5f) * treadDepth;
+            CreatePrimitive(transition.transform, $"Tower Step {step + 1:00}", PrimitiveType.Cube,
+                new Vector3(0f, y - 0.15f, z), new Vector3(6f, rise, treadDepth + 0.04f));
+        }
+
+        CreatePrimitive(transition.transform, "Upper Landing", PrimitiveType.Cube,
+            new Vector3(0f, FloorHeight - 0.15f, -15.5f), new Vector3(7f, 0.3f, 6f));
+        CreatePrimitive(transition.transform, "Statue Landing", PrimitiveType.Cube,
+            new Vector3(0f, FloorHeight * 0.5f - 0.15f, 1f), new Vector3(8f, 0.3f, 4f));
+        CreatePrimitive(transition.transform, "Left Stairwell Wall", PrimitiveType.Cube,
+            new Vector3(-4.25f, FloorHeight * 0.5f, 1f), new Vector3(0.5f, FloorHeight + 2f, 43f));
+        CreatePrimitive(transition.transform, "Right Stairwell Wall", PrimitiveType.Cube,
+            new Vector3(4.25f, FloorHeight * 0.5f, 1f), new Vector3(0.5f, FloorHeight + 2f, 43f));
+        CreatePrimitive(transition.transform, "Lower Stairwell Floor", PrimitiveType.Cube,
+            new Vector3(0f, -0.15f, 22f), new Vector3(8f, 0.3f, 6f));
+
+        GameObject statue = new GameObject($"Floor {floor + 1:00} Rest Statue");
+        statue.transform.SetParent(transition.transform, false);
+        statue.transform.localPosition = new Vector3(2.35f, FloorHeight * 0.5f, 1f);
+        statue.AddComponent<RestStatueInteractable>().Configure(this);
+        CreatePrimitive(statue.transform, "Stone Pedestal", PrimitiveType.Cylinder, new Vector3(0f, 0.3f, 0f), new Vector3(1.25f, 0.3f, 1.25f));
+        CreatePrimitive(statue.transform, "Stone Guardian", PrimitiveType.Capsule, new Vector3(0f, 1.75f, 0f), new Vector3(1.05f, 1.45f, 1.05f));
+        CreatePrimitive(statue.transform, "Stone Head", PrimitiveType.Sphere, new Vector3(0f, 3.25f, 0f), Vector3.one * 0.9f);
+        CreatePrimitive(statue.transform, "Stone Blade", PrimitiveType.Cube, new Vector3(0f, 1.65f, -0.65f), new Vector3(0.22f, 2.6f, 0.22f));
+
+        stageExitDoors[floor] = CreateDoor(floorRoot, $"Floor {floor + 1:00} Stair Gate",
+            new Vector3(0f, 0f, startZ + 0.6f), floor, false, true);
+        floorEntranceDoors[floor] = CreateDoor(transition.transform, $"Floor {floor + 2:00} Entrance",
+            new Vector3(0f, FloorHeight, -18.2f), floor, true, true);
+        floorEntranceDoors[floor].SetUnlocked(false);
+
+        CreatePrimitive(transition.transform, "Left Stair Rail", PrimitiveType.Cube,
+            new Vector3(-3.35f, FloorHeight * 0.5f + 0.65f, 1f), new Vector3(0.22f, 0.32f, 38.5f))
+            .transform.localRotation = Quaternion.Euler(-Mathf.Atan2(FloorHeight, 38f) * Mathf.Rad2Deg, 0f, 0f);
+        CreatePrimitive(transition.transform, "Right Stair Rail", PrimitiveType.Cube,
+            new Vector3(3.35f, FloorHeight * 0.5f + 0.65f, 1f), new Vector3(0.22f, 0.32f, 38.5f))
+            .transform.localRotation = Quaternion.Euler(-Mathf.Atan2(FloorHeight, 38f) * Mathf.Rad2Deg, 0f, 0f);
     }
 
     private StageExitDoor CreateDoor(Transform parent, string name, Vector3 position, int stageIndex, bool restExit, bool localSpace)
@@ -465,7 +589,7 @@ public sealed class TinyParryStageManager : MonoBehaviour
         return result;
     }
 
-    private static GameObject CreatePrimitive(Transform parent, string name, PrimitiveType type, Vector3 localPosition, Vector3 localScale)
+    private GameObject CreatePrimitive(Transform parent, string name, PrimitiveType type, Vector3 localPosition, Vector3 localScale)
     {
         GameObject value = GameObject.CreatePrimitive(type);
         value.name = name;
@@ -473,12 +597,15 @@ public sealed class TinyParryStageManager : MonoBehaviour
         value.transform.localPosition = localPosition;
         value.transform.localScale = localScale;
         Renderer renderer = value.GetComponent<Renderer>();
-        if (renderer != null) renderer.material.color = new Color(0.28f, 0.29f, 0.32f, 1f);
+        if (renderer != null && towerStoneMaterial != null) renderer.sharedMaterial = towerStoneMaterial;
         return value;
     }
 
-    private string GetStageName(int index) => stageNames != null && index >= 0 && index < stageNames.Length ? stageNames[index] : $"Round {index + 1}";
-    private static Vector3 GetPlayerSpawn(int stageIndex) => new Vector3(0f, 0.15f, stageIndex == 2 || stageIndex >= 5 ? -16f : -14f);
+    private string GetStageName(int index) => stageNames != null && index >= 0 && index < stageNames.Length ? stageNames[index] : $"Floor {index + 1}";
+    private static Vector3 GetPlayerSpawn(int stageIndex) => new Vector3(
+        0f,
+        stageIndex * FloorHeight + 0.15f,
+        stageIndex == 2 || stageIndex >= 5 ? -16f : -14f);
 
     private void HandleDebugKeys()
     {
@@ -548,6 +675,15 @@ public sealed class TinyParryStageManager : MonoBehaviour
             Animator animator = boss.GetComponentInChildren<Animator>();
             if (animator != null) animator.speed = enabled ? 1f : 0f;
         }
+    }
+
+    private void SetBossSimulation(int index, bool enabled)
+    {
+        if (bosses == null || index < 0 || index >= bosses.Length || bosses[index] == null) return;
+        BossAI ai = bosses[index].GetComponent<BossAI>();
+        if (ai != null) ai.enabled = enabled;
+        Animator animator = bosses[index].GetComponentInChildren<Animator>();
+        if (animator != null) animator.speed = enabled ? 1f : 0f;
     }
     private static void ReloadScene(bool autoStart) { Time.timeScale = 1f; autoStartNextLoad = autoStart; SceneManager.LoadScene(SceneManager.GetActiveScene().name); }
 
@@ -662,5 +798,6 @@ public sealed class TinyParryStageManager : MonoBehaviour
         Time.timeScale = 1f;
         if (playerHealth != null) playerHealth.Died -= OnPlayerDied;
         if (bosses != null) foreach (CombatantHealth boss in bosses) if (boss != null) boss.Died -= OnAnyBossDied;
+        if (towerStoneMaterial != null) Destroy(towerStoneMaterial);
     }
 }
