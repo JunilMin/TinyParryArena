@@ -911,9 +911,9 @@ public sealed class PlayerCombat : MonoBehaviour
     {
 #if ENABLE_INPUT_SYSTEM
         Keyboard keyboard = Keyboard.current;
-        return keyboard != null && keyboard.rKey.wasPressedThisFrame;
+        return keyboard != null && keyboard.fKey.wasPressedThisFrame;
 #else
-        return Input.GetKeyDown(KeyCode.R);
+        return Input.GetKeyDown(KeyCode.F);
 #endif
     }
 

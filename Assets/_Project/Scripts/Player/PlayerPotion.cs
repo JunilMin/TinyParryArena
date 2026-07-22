@@ -70,9 +70,9 @@ public sealed class PlayerPotion : MonoBehaviour
     {
 #if ENABLE_INPUT_SYSTEM
         Keyboard keyboard = Keyboard.current;
-        return keyboard != null && keyboard.eKey.wasPressedThisFrame;
+        return keyboard != null && keyboard.rKey.wasPressedThisFrame;
 #else
-        return Input.GetKeyDown(KeyCode.E);
+        return Input.GetKeyDown(KeyCode.R);
 #endif
     }
 }
