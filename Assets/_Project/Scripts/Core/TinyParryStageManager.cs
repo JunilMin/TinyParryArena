@@ -387,9 +387,6 @@ public sealed class TinyParryStageManager : MonoBehaviour
         if (state != GameState.AwaitingExit || stageIndex != currentStage) return;
         state = GameState.RestExploration;
         int nextFloor = currentStage + 1;
-        TeleportPlayer(new Vector3(60f, currentStage * FloorHeight + 0.15f, 22f));
-        if (player != null) player.rotation = Quaternion.Euler(0f, 180f, 0f);
-        controller?.ResetVerticalMotion();
         if (floorEntranceDoors != null && currentStage < floorEntranceDoors.Length)
             floorEntranceDoors[currentStage]?.SetUnlocked(true);
         if (playerHealth != null) playerHealth.Heal(playerHealth.MaxHealth);
@@ -425,6 +422,7 @@ public sealed class TinyParryStageManager : MonoBehaviour
             hud?.ClearOverlay();
             SetGameplayControls(true);
             SetInteractionEnabled(true);
+            hud?.SetMessage("CONTINUE UP THE STAIRS  -  PRESS E AT THE UPPER GATE");
             return;
         }
 
@@ -524,35 +522,47 @@ public sealed class TinyParryStageManager : MonoBehaviour
     private void CreateTowerTransition(int floor)
     {
         Transform floorRoot = stageRoots[floor].transform;
+        float backWallZ = PrepareBackWallOpening(floorRoot);
+        float startZ = backWallZ + 1.6f;
+        const float stairRun = 38f;
         GameObject transition = new GameObject($"Stairway {floor + 1:00} to {floor + 2:00}");
         transition.transform.SetParent(floorRoot, false);
-        transition.transform.localPosition = new Vector3(60f, 0f, 0f);
 
-        const float startZ = 20f;
-        float treadDepth = 38f / StairStepCount;
+        float treadDepth = stairRun / StairStepCount;
         float rise = FloorHeight / StairStepCount;
         for (int step = 0; step < StairStepCount; step++)
         {
             float y = (step + 0.5f) * rise;
-            float z = startZ - (step + 0.5f) * treadDepth;
-            CreatePrimitive(transition.transform, $"Tower Step {step + 1:00}", PrimitiveType.Cube,
+            float z = startZ + (step + 0.5f) * treadDepth;
+            GameObject visualStep = CreatePrimitive(transition.transform, $"Tower Step {step + 1:00}", PrimitiveType.Cube,
                 new Vector3(0f, y - 0.15f, z), new Vector3(6f, rise, treadDepth + 0.04f));
+            Collider stepCollider = visualStep.GetComponent<Collider>();
+            if (stepCollider != null) stepCollider.enabled = false;
         }
 
+        float stairCenterZ = startZ + stairRun * 0.5f;
+        float stairAngle = Mathf.Atan2(FloorHeight, stairRun) * Mathf.Rad2Deg;
+        GameObject walkableRamp = CreatePrimitive(transition.transform, "Walkable Stair Ramp", PrimitiveType.Cube,
+            new Vector3(0f, FloorHeight * 0.5f - 0.18f, stairCenterZ),
+            new Vector3(5.75f, 0.36f, Mathf.Sqrt(stairRun * stairRun + FloorHeight * FloorHeight)));
+        walkableRamp.transform.localRotation = Quaternion.Euler(-stairAngle, 0f, 0f);
+        Renderer rampRenderer = walkableRamp.GetComponent<Renderer>();
+        if (rampRenderer != null) rampRenderer.enabled = false;
+
         CreatePrimitive(transition.transform, "Upper Landing", PrimitiveType.Cube,
-            new Vector3(0f, FloorHeight - 0.15f, -15.5f), new Vector3(7f, 0.3f, 6f));
+            new Vector3(0f, FloorHeight - 0.15f, startZ + stairRun + 2.5f), new Vector3(7f, 0.3f, 6f));
         CreatePrimitive(transition.transform, "Statue Landing", PrimitiveType.Cube,
-            new Vector3(0f, FloorHeight * 0.5f - 0.15f, 1f), new Vector3(8f, 0.3f, 4f));
+            new Vector3(0f, FloorHeight * 0.5f - 0.15f, stairCenterZ), new Vector3(8f, 0.3f, 4f));
         CreatePrimitive(transition.transform, "Left Stairwell Wall", PrimitiveType.Cube,
-            new Vector3(-4.25f, FloorHeight * 0.5f, 1f), new Vector3(0.5f, FloorHeight + 2f, 43f));
+            new Vector3(-4.25f, FloorHeight * 0.5f, stairCenterZ), new Vector3(0.5f, FloorHeight + 2f, 45f));
         CreatePrimitive(transition.transform, "Right Stairwell Wall", PrimitiveType.Cube,
-            new Vector3(4.25f, FloorHeight * 0.5f, 1f), new Vector3(0.5f, FloorHeight + 2f, 43f));
+            new Vector3(4.25f, FloorHeight * 0.5f, stairCenterZ), new Vector3(0.5f, FloorHeight + 2f, 45f));
         CreatePrimitive(transition.transform, "Lower Stairwell Floor", PrimitiveType.Cube,
-            new Vector3(0f, -0.15f, 22f), new Vector3(8f, 0.3f, 6f));
+            new Vector3(0f, -0.15f, backWallZ + 0.8f), new Vector3(8f, 0.3f, 5f));
 
         GameObject statue = new GameObject($"Floor {floor + 1:00} Rest Statue");
         statue.transform.SetParent(transition.transform, false);
-        statue.transform.localPosition = new Vector3(2.35f, FloorHeight * 0.5f, 1f);
+        statue.transform.localPosition = new Vector3(2.35f, FloorHeight * 0.5f, stairCenterZ);
         statue.AddComponent<RestStatueInteractable>().Configure(this);
         CreatePrimitive(statue.transform, "Stone Pedestal", PrimitiveType.Cylinder, new Vector3(0f, 0.3f, 0f), new Vector3(1.25f, 0.3f, 1.25f));
         CreatePrimitive(statue.transform, "Stone Guardian", PrimitiveType.Capsule, new Vector3(0f, 1.75f, 0f), new Vector3(1.05f, 1.45f, 1.05f));
@@ -560,17 +570,61 @@ public sealed class TinyParryStageManager : MonoBehaviour
         CreatePrimitive(statue.transform, "Stone Blade", PrimitiveType.Cube, new Vector3(0f, 1.65f, -0.65f), new Vector3(0.22f, 2.6f, 0.22f));
 
         stageExitDoors[floor] = CreateDoor(floorRoot, $"Floor {floor + 1:00} Stair Gate",
-            new Vector3(0f, 0f, startZ + 0.6f), floor, false, true);
+            new Vector3(0f, 0f, backWallZ - 0.45f), floor, false, true);
         floorEntranceDoors[floor] = CreateDoor(transition.transform, $"Floor {floor + 2:00} Entrance",
-            new Vector3(0f, FloorHeight, -18.2f), floor, true, true);
+            new Vector3(0f, FloorHeight, startZ + stairRun + 4.7f), floor, true, true);
         floorEntranceDoors[floor].SetUnlocked(false);
 
         CreatePrimitive(transition.transform, "Left Stair Rail", PrimitiveType.Cube,
-            new Vector3(-3.35f, FloorHeight * 0.5f + 0.65f, 1f), new Vector3(0.22f, 0.32f, 38.5f))
-            .transform.localRotation = Quaternion.Euler(-Mathf.Atan2(FloorHeight, 38f) * Mathf.Rad2Deg, 0f, 0f);
+            new Vector3(-3.35f, FloorHeight * 0.5f + 0.65f, stairCenterZ), new Vector3(0.22f, 0.32f, stairRun + 0.5f))
+            .transform.localRotation = Quaternion.Euler(-stairAngle, 0f, 0f);
         CreatePrimitive(transition.transform, "Right Stair Rail", PrimitiveType.Cube,
-            new Vector3(3.35f, FloorHeight * 0.5f + 0.65f, 1f), new Vector3(0.22f, 0.32f, 38.5f))
-            .transform.localRotation = Quaternion.Euler(-Mathf.Atan2(FloorHeight, 38f) * Mathf.Rad2Deg, 0f, 0f);
+            new Vector3(3.35f, FloorHeight * 0.5f + 0.65f, stairCenterZ), new Vector3(0.22f, 0.32f, stairRun + 0.5f))
+            .transform.localRotation = Quaternion.Euler(-stairAngle, 0f, 0f);
+    }
+
+    private float PrepareBackWallOpening(Transform floorRoot)
+    {
+        Transform backWall = null;
+        Transform[] all = floorRoot.GetComponentsInChildren<Transform>(true);
+        foreach (Transform candidate in all)
+        {
+            if (candidate.name == "North Wall" || candidate.name == "Back Wall")
+            {
+                backWall = candidate;
+                break;
+            }
+        }
+
+        float wallZ = backWall != null
+            ? floorRoot.InverseTransformPoint(backWall.position).z
+            : 32f;
+
+        foreach (Transform candidate in all)
+        {
+            if (candidate == null || candidate == backWall || candidate == floorRoot) continue;
+            Vector3 local = floorRoot.InverseTransformPoint(candidate.position);
+            if (Mathf.Abs(local.z - wallZ) > 1.6f || Mathf.Abs(local.x) > 3.5f) continue;
+            string lowerName = candidate.name.ToLowerInvariant();
+            if (lowerName.Contains("wall") || lowerName.Contains("gate"))
+                candidate.gameObject.SetActive(false);
+        }
+
+        if (backWall == null) return wallZ;
+
+        Vector3 wallPosition = floorRoot.InverseTransformPoint(backWall.position);
+        Vector3 wallScale = backWall.localScale;
+        const float openingWidth = 5.5f;
+        float sideWidth = Mathf.Max(1f, (wallScale.x - openingWidth) * 0.5f);
+        float sideOffset = openingWidth * 0.5f + sideWidth * 0.5f;
+        CreatePrimitive(floorRoot, "Back Wall Left Section", PrimitiveType.Cube,
+            new Vector3(-sideOffset, wallPosition.y, wallPosition.z),
+            new Vector3(sideWidth, wallScale.y, wallScale.z));
+        CreatePrimitive(floorRoot, "Back Wall Right Section", PrimitiveType.Cube,
+            new Vector3(sideOffset, wallPosition.y, wallPosition.z),
+            new Vector3(sideWidth, wallScale.y, wallScale.z));
+        backWall.gameObject.SetActive(false);
+        return wallZ;
     }
 
     private StageExitDoor CreateDoor(Transform parent, string name, Vector3 position, int stageIndex, bool restExit, bool localSpace)

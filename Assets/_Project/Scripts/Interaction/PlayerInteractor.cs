@@ -10,12 +10,21 @@ public sealed class PlayerInteractor : MonoBehaviour
 
     private TinyParryHUD hud;
     private IPlayerInteractable current;
+    private bool waitForInteractRelease;
     private readonly Collider[] nearbyColliders = new Collider[32];
 
     private void Start() => hud = FindFirstObjectByType<TinyParryHUD>();
 
+    private void OnEnable() => waitForInteractRelease = true;
+
     private void Update()
     {
+        if (waitForInteractRelease)
+        {
+            if (InteractHeld()) return;
+            waitForInteractRelease = false;
+        }
+
         current = FindNearest();
         hud?.SetInteractionPrompt(current != null ? $"[E]  {current.InteractionPrompt}" : string.Empty);
         if (current != null && InteractPressed())
@@ -53,6 +62,16 @@ public sealed class PlayerInteractor : MonoBehaviour
         return keyboard != null && keyboard.eKey.wasPressedThisFrame;
 #else
         return Input.GetKeyDown(KeyCode.E);
+#endif
+    }
+
+    private static bool InteractHeld()
+    {
+#if ENABLE_INPUT_SYSTEM
+        Keyboard keyboard = Keyboard.current;
+        return keyboard != null && keyboard.eKey.isPressed;
+#else
+        return Input.GetKey(KeyCode.E);
 #endif
     }
 
