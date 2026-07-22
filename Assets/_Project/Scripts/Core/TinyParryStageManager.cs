@@ -551,14 +551,13 @@ public sealed class TinyParryStageManager : MonoBehaviour
 
         CreatePrimitive(transition.transform, "Upper Landing", PrimitiveType.Cube,
             new Vector3(0f, FloorHeight - 0.15f, startZ + stairRun + 2.5f), new Vector3(7f, 0.3f, 6f));
-        CreatePrimitive(transition.transform, "Statue Landing", PrimitiveType.Cube,
-            new Vector3(0f, FloorHeight * 0.5f - 0.15f, stairCenterZ), new Vector3(8f, 0.3f, 4f));
         CreatePrimitive(transition.transform, "Left Stairwell Wall", PrimitiveType.Cube,
             new Vector3(-4.25f, FloorHeight * 0.5f, stairCenterZ), new Vector3(0.5f, FloorHeight + 2f, 45f));
         CreatePrimitive(transition.transform, "Right Stairwell Wall", PrimitiveType.Cube,
             new Vector3(4.25f, FloorHeight * 0.5f, stairCenterZ), new Vector3(0.5f, FloorHeight + 2f, 45f));
         CreatePrimitive(transition.transform, "Lower Stairwell Floor", PrimitiveType.Cube,
-            new Vector3(0f, -0.15f, backWallZ + 0.8f), new Vector3(8f, 0.3f, 5f));
+            new Vector3(0f, -0.15f, (backWallZ + startZ) * 0.5f),
+            new Vector3(8f, 0.3f, startZ - backWallZ));
 
         GameObject statue = new GameObject($"Floor {floor + 1:00} Rest Statue");
         statue.transform.SetParent(transition.transform, false);
@@ -600,12 +599,15 @@ public sealed class TinyParryStageManager : MonoBehaviour
             ? floorRoot.InverseTransformPoint(backWall.position).z
             : 32f;
 
+        ClearExitApproach(floorRoot, backWall, wallZ);
+
         foreach (Transform candidate in all)
         {
             if (candidate == null || candidate == backWall || candidate == floorRoot) continue;
             Vector3 local = floorRoot.InverseTransformPoint(candidate.position);
-            if (Mathf.Abs(local.z - wallZ) > 1.6f || Mathf.Abs(local.x) > 3.5f) continue;
             string lowerName = candidate.name.ToLowerInvariant();
+
+            if (Mathf.Abs(local.z - wallZ) > 1.6f || Mathf.Abs(local.x) > 3.5f) continue;
             if (lowerName.Contains("wall") || lowerName.Contains("gate"))
                 candidate.gameObject.SetActive(false);
         }
@@ -625,6 +627,59 @@ public sealed class TinyParryStageManager : MonoBehaviour
             new Vector3(sideWidth, wallScale.y, wallScale.z));
         backWall.gameObject.SetActive(false);
         return wallZ;
+    }
+
+    private static void ClearExitApproach(Transform floorRoot, Transform backWall, float wallZ)
+    {
+        for (int index = 0; index < floorRoot.childCount; index++)
+        {
+            Transform candidate = floorRoot.GetChild(index);
+            if (candidate == null || candidate == backWall) continue;
+
+            string lowerName = candidate.name.ToLowerInvariant();
+            if (lowerName.Contains("floor") || lowerName.Contains("carpet") || lowerName.Contains("ceiling"))
+                continue;
+            if (!TryGetLocalVisualBounds(floorRoot, candidate, out Bounds bounds))
+                continue;
+
+            bool overlapsExitWidth = bounds.max.x >= -3f && bounds.min.x <= 3f;
+            bool overlapsExitDepth = bounds.max.z >= wallZ - 7f && bounds.min.z <= wallZ + 2f;
+            bool overlapsPlayerHeight = bounds.max.y >= 0.08f && bounds.min.y <= 2.4f;
+            if (overlapsExitWidth && overlapsExitDepth && overlapsPlayerHeight)
+                candidate.gameObject.SetActive(false);
+        }
+    }
+
+    private static bool TryGetLocalVisualBounds(Transform floorRoot, Transform candidate, out Bounds localBounds)
+    {
+        localBounds = default;
+        bool found = false;
+        Renderer[] renderers = candidate.GetComponentsInChildren<Renderer>(true);
+        foreach (Renderer renderer in renderers)
+        {
+            if (renderer == null) continue;
+            Bounds world = renderer.bounds;
+            Vector3 min = world.min;
+            Vector3 max = world.max;
+            for (int corner = 0; corner < 8; corner++)
+            {
+                Vector3 worldCorner = new Vector3(
+                    (corner & 1) == 0 ? min.x : max.x,
+                    (corner & 2) == 0 ? min.y : max.y,
+                    (corner & 4) == 0 ? min.z : max.z);
+                Vector3 localCorner = floorRoot.InverseTransformPoint(worldCorner);
+                if (!found)
+                {
+                    localBounds = new Bounds(localCorner, Vector3.zero);
+                    found = true;
+                }
+                else
+                {
+                    localBounds.Encapsulate(localCorner);
+                }
+            }
+        }
+        return found;
     }
 
     private StageExitDoor CreateDoor(Transform parent, string name, Vector3 position, int stageIndex, bool restExit, bool localSpace)
